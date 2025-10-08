@@ -1,0 +1,953 @@
+{
+	"info": {
+		"_postman_id": "spendswift-api-collection",
+		"name": "SpendSwift API Collection",
+		"description": "Complete API collection for SpendSwift Purchase Request Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api"
+		},
+		{
+			"key": "jwt_token",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.token) {",
+									"        pm.collectionVariables.set('jwt_token', response.data.token);",
+									"        console.log('JWT Token saved:', response.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@spendswift.com\",\n    \"password\": \"password123\",\n    \"remember\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with admin credentials"
+					}
+				},
+				{
+					"name": "Login as User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.token) {",
+									"        pm.collectionVariables.set('jwt_token', response.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"mohamed.ali@spendswift.com\",\n    \"password\": \"password123\",\n    \"remember\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as regular user"
+					}
+				},
+				{
+					"name": "Login as Manager",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.token) {",
+									"        pm.collectionVariables.set('jwt_token', response.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sarah.johnson@spendswift.com\",\n    \"password\": \"password123\",\n    \"remember\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as direct manager"
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user info"
+					}
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get detailed user profile with relationships"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"Mohamed\",\n    \"last_name\": \"Ali\",\n    \"phone\": \"+201234567890\",\n    \"position\": \"Senior Full Stack Developer\",\n    \"language_preference\": \"ar\",\n    \"timezone\": \"Africa/Cairo\",\n    \"currency\": \"EGP\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Update user profile information"
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"password123\",\n    \"new_password\": \"newpassword123\",\n    \"new_password_confirmation\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Change user password"
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Refresh JWT token"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and invalidate token"
+					}
+				}
+			],
+			"description": "Authentication endpoints"
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard",
+								"stats"
+							]
+						},
+						"description": "Get dashboard statistics based on user role"
+					}
+				},
+				{
+					"name": "Get Recent Activity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/dashboard/recent-activity?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"dashboard",
+								"recent-activity"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get recent activity logs"
+					}
+				}
+			],
+			"description": "Dashboard endpoints"
+		},
+		{
+			"name": "Requests",
+			"item": [
+				{
+					"name": "Get All Requests",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/requests?per_page=15&type=purchase&state=SUBMITTED",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								},
+								{
+									"key": "type",
+									"value": "purchase",
+									"description": "purchase or project"
+								},
+								{
+									"key": "state",
+									"value": "SUBMITTED",
+									"description": "Request state filter"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of requests with filters"
+					}
+				},
+				{
+					"name": "Create Purchase Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"purchase\",\n    \"title\": \"New MacBook Pro for Development\",\n    \"description\": \"Urgent requirement for M3 MacBook Pro to replace aging development machine. Current machine is causing delays in development work.\",\n    \"category\": \"IT Equipment\",\n    \"desired_cost\": 2499.99,\n    \"currency\": \"USD\",\n    \"needed_by_date\": \"2025-10-15\",\n    \"submit_immediately\": true,\n    \"items\": [\n        {\n            \"name\": \"MacBook Pro M3 16-inch\",\n            \"quantity\": 1,\n            \"unit_price\": 2499.99,\n            \"vendor_hint\": \"Apple Store or authorized reseller\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests"
+							]
+						},
+						"description": "Create a new purchase request with items"
+					}
+				},
+				{
+					"name": "Create Project Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"project\",\n    \"title\": \"Website Redesign Project\",\n    \"description\": \"Complete redesign of company website with improved UX/UI and mobile responsiveness\",\n    \"category\": \"Digital Transformation\",\n    \"desired_cost\": 15000.00,\n    \"currency\": \"USD\",\n    \"needed_by_date\": \"2025-12-31\",\n    \"client_name\": \"Internal Marketing Team\",\n    \"project_description\": \"Redesign company website with focus on improved user experience, mobile responsiveness, and conversion rate optimization. Include new branding elements and integrate with CRM system.\",\n    \"total_cost\": 12000.00,\n    \"total_benefit\": 25000.00,\n    \"total_price\": 15000.00,\n    \"items\": [\n        {\n            \"name\": \"UI/UX Design\",\n            \"quantity\": 1,\n            \"unit_price\": 5000.00,\n            \"vendor_hint\": \"External design agency\"\n        },\n        {\n            \"name\": \"Frontend Development\",\n            \"quantity\": 1,\n            \"unit_price\": 7000.00,\n            \"vendor_hint\": \"Development team\"\n        },\n        {\n            \"name\": \"CRM Integration\",\n            \"quantity\": 1,\n            \"unit_price\": 3000.00,\n            \"vendor_hint\": \"Integration specialist\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests"
+							]
+						},
+						"description": "Create a new project request"
+					}
+				},
+				{
+					"name": "Get Request by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/requests/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests",
+								"1"
+							]
+						},
+						"description": "Get detailed information about a specific request"
+					}
+				},
+				{
+					"name": "Update Request",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated MacBook Pro for Development (Urgent)\",\n    \"description\": \"Updated description with more urgency details\",\n    \"desired_cost\": 2599.99,\n    \"needed_by_date\": \"2025-10-10\",\n    \"items\": [\n        {\n            \"name\": \"MacBook Pro M3 16-inch with upgraded RAM\",\n            \"quantity\": 1,\n            \"unit_price\": 2599.99,\n            \"vendor_hint\": \"Apple Store - upgraded configuration\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/requests/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests",
+								"1"
+							]
+						},
+						"description": "Update a request (only allowed in DRAFT state)"
+					}
+				},
+				{
+					"name": "Submit Request for Approval",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/requests/1/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests",
+								"1",
+								"submit"
+							]
+						},
+						"description": "Submit a draft request for approval workflow"
+					}
+				},
+				{
+					"name": "Delete Request",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/requests/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests",
+								"1"
+							]
+						},
+						"description": "Delete a request (only allowed in DRAFT state)"
+					}
+				},
+				{
+					"name": "Get Pending Approvals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/requests/pending-approvals?per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"requests",
+								"pending-approvals"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get requests pending approval for current user (managers/accountants only)"
+					}
+				}
+			],
+			"description": "Request management endpoints"
+		},
+		{
+			"name": "Approvals",
+			"item": [
+				{
+					"name": "Approve Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"comment\": \"Approved. This equipment is necessary for the development team productivity.\",\n    \"payout_channel\": \"COMPANY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/1/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"1",
+								"approve"
+							]
+						},
+						"description": "Approve a request (managers/accountants only)"
+					}
+				},
+				{
+					"name": "Reject Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"comment\": \"Request rejected due to budget constraints. Please consider a more cost-effective alternative or defer until next quarter.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/1/reject",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"1",
+								"reject"
+							]
+						},
+						"description": "Reject a request with mandatory comment"
+					}
+				},
+				{
+					"name": "Transfer Funds (Admin Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payout_reference\": \"TXN-2025-001234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/approvals/1/transfer-funds",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"1",
+								"transfer-funds"
+							]
+						},
+						"description": "Mark funds as transferred (admin only)"
+					}
+				},
+				{
+					"name": "Get Approval History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/approvals/1/history",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"approvals",
+								"1",
+								"history"
+							]
+						},
+						"description": "Get complete approval history for a request"
+					}
+				}
+			],
+			"description": "Approval workflow endpoints"
+		},
+		{
+			"name": "Admin - User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users?per_page=15&search=&role=USER&status=active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "role",
+									"value": "USER"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						},
+						"description": "Get paginated list of users with filters (admin only)"
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Employee\",\n    \"email\": \"newemployee@spendswift.com\",\n    \"password\": \"password123\",\n    \"role\": \"USER\",\n    \"first_name\": \"New\",\n    \"last_name\": \"Employee\",\n    \"phone\": \"+201234567890\",\n    \"position\": \"Junior Developer\",\n    \"team_id\": 1,\n    \"department_id\": 1,\n    \"language_preference\": \"en\",\n    \"timezone\": \"UTC\",\n    \"currency\": \"USD\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							]
+						},
+						"description": "Create a new user (admin only)"
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"1"
+							]
+						},
+						"description": "Get detailed user information (admin only)"
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Employee Name\",\n    \"role\": \"DIRECT_MANAGER\",\n    \"position\": \"Senior Developer\",\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"1"
+							]
+						},
+						"description": "Update user information (admin only)"
+					}
+				},
+				{
+					"name": "Toggle User Status",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/toggle-status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"1",
+								"toggle-status"
+							]
+						},
+						"description": "Toggle user active/inactive status (admin only)"
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"1"
+							]
+						},
+						"description": "Delete user (admin only, not allowed if user has pending requests)"
+					}
+				}
+			],
+			"description": "User management endpoints (admin only)"
+		},
+		{
+			"name": "Admin - Reports",
+			"item": [
+				{
+					"name": "Admin Overview",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/reports/overview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reports",
+								"overview"
+							]
+						},
+						"description": "Get system-wide overview statistics (admin only)"
+					}
+				},
+				{
+					"name": "Requests Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/reports/requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reports",
+								"requests"
+							]
+						},
+						"description": "Get detailed requests report (admin only)"
+					}
+				},
+				{
+					"name": "Users Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/reports/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reports",
+								"users"
+							]
+						},
+						"description": "Get users activity report (admin only)"
+					}
+				}
+			],
+			"description": "Admin reporting endpoints"
+		},
+		{
+			"name": "Manager Reports",
+			"item": [
+				{
+					"name": "Team Requests",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/reports/team-requests",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"team-requests"
+							]
+						},
+						"description": "Get team requests report (managers only)"
+					}
+				},
+				{
+					"name": "Budget Utilization",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/reports/budget-utilization",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"budget-utilization"
+							]
+						},
+						"description": "Get budget utilization report (managers only)"
+					}
+				},
+				{
+					"name": "Approval Times",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/reports/approval-times",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"approval-times"
+							]
+						},
+						"description": "Get approval times analytics (managers only)"
+					}
+				}
+			],
+			"description": "Manager reporting endpoints"
+		},
+		{
+			"name": "Utilities",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "API health check endpoint"
+					}
+				}
+			],
+			"description": "Utility endpoints"
+		}
+	]
+}

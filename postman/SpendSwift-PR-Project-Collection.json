@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "ActionG - Projects & Procurement API",
+    "_postman_id": "0000-0000-0000-0000",
+    "description": "Postman collection organized by project-based resources: Authentication, Projects, Purchase Requests (PR), Quotes (عروض الاسعار) and Approvals. Backend server for local development is in the Action-G-backend folder.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string",
+      "description": "Base URL for the API (change to your environment). Backend lives in Action-G-backend. Run it with your local PHP/Laravel server."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT or Bearer token returned from login"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string",
+      "description": "Example project id used in requests"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "type": "string",
+      "description": "Example PR/request id used in nested endpoints"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints for obtaining tokens and user info",
+      "item": [
+        {
+          "name": "Auth - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"admin@spendswift.com\", \"password\": \"password123\" }"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Auth - Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "description": "Project management endpoints (create, list, update)",
+      "item": [
+        {
+          "name": "Projects - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"New Project\", \"code\": \"PROJ-001\", \"description\": \"Project for Q4 initiative\" }"
+            }
+          }
+        },
+        {
+          "name": "Projects - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Requests",
+      "description": "Purchase Requests (PR) endpoints, tied to projects",
+      "item": [
+        {
+          "name": "Requests - Create PR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"project_id\": \"{{projectId}}\", \"type\": \"purchase\", \"title\": \"Buy laptop\", \"description\": \"For dev work\", \"category\": \"Hardware\", \"desired_cost\": 1200, \"currency\": \"USD\", \"needed_by_date\": \"2025-12-01\", \"items\": [{ \"name\": \"Laptop\", \"quantity\": 1, \"unit_price\": 1200 }] }"
+            }
+          }
+        },
+        {
+          "name": "Requests - Get PR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quotes",
+      "description": "Actions for adding and selecting vendor quotes (عروض الاسعار)",
+      "item": [
+        {
+          "name": "Requests - Add Quote (عروض الاسعار)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/quotes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "quotes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"vendor\": \"Vendor A\", \"price\": 1150, \"currency\": \"USD\", \"delivery_days\": 7 }"
+            }
+          }
+        },
+        {
+          "name": "Requests - Select Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/requests/{{requestId}}/select-quote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "requests",
+                "{{requestId}}",
+                "select-quote"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"quote_id\": \"{{quoteId}}\" }"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approvals",
+      "description": "Approval workflow endpoints for PRs",
+      "item": [
+        {
+          "name": "Approvals - Approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/{{requestId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "{{requestId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"comment\": \"Approved\" }"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
