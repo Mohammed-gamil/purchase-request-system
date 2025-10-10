@@ -354,7 +354,6 @@ const i18n: Record<Language, Record<string, string>> = {
     total: "Total",
     reserved: "Reserved",
     available: "Available",
-    location: "Location",
     maintenanceDue: "Maintenance Due",
     inactive: "Inactive",
     addInventoryItem: "Add Inventory Item",
@@ -390,6 +389,10 @@ const i18n: Record<Language, Record<string, string>> = {
     selectCategory: "Select Category",
     customCategory: "Custom Category",
     enterCustomCategory: "Enter custom category",
+    browseInventory: "Browse Inventory",
+    searchAction: "Search",
+    inventoryItemsOptional: "Inventory Items (Optional)",
+    inventoryItemsHelp: "Select tools and equipment needed for this project",
   },
   ar: {
     appTitle: "Action-G",
@@ -538,7 +541,7 @@ const i18n: Record<Language, Record<string, string>> = {
     // Inventory Management (page)
     inventoryManageSubtitle: "إدارة الأدوات والمعدات والمواد",
     addItem: "إضافة عنصر",
-    searchInventoryPlaceholder: "بحث بالاسم أو الكود أو الوصف...",
+    searchInventoryPlaceholder: "   بحث بالاسم أو الكود أو الوصف...   ",
     allCategories: "كل الفئات",
     loadingInventory: "جارٍ تحميل المخزون...",
     noInventoryItems: "لا توجد عناصر في المخزون",
@@ -547,7 +550,6 @@ const i18n: Record<Language, Record<string, string>> = {
     total: "الإجمالي",
     reserved: "المحجوز",
     available: "المتاح",
-    location: "الموقع",
     maintenanceDue: "صيانة مطلوبة",
     inactive: "غير نشط",
     addInventoryItem: "إضافة عنصر مخزون",
@@ -583,6 +585,10 @@ const i18n: Record<Language, Record<string, string>> = {
     selectCategory: "اختر الفئة",
     customCategory: "فئة مخصصة",
     enterCustomCategory: "أدخل فئة مخصصة",
+    browseInventory: "تصفح المخزون",
+    searchAction: "بحث",
+    inventoryItemsOptional: "عناصر المخزون (اختياري)",
+    inventoryItemsHelp: "اختر الأدوات والمعدات اللازمة لهذا المشروع",
   },
 };
 
@@ -735,16 +741,17 @@ function InventorySelectionInline({
         <button
           type="button"
           onClick={() => { setShowBrowser(true); loadInventory(); }}
-          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary inline-flex items-center gap-2"
         >
-          + Browse Inventory
+          <span className="font-bold text-lg">+</span>
+          <span>{t("browseInventory")}</span>
         </button>
       ) : (
         <div className="space-y-3 rounded-lg border border-border bg-background p-3">
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Search inventory..."
+              placeholder={t("searchInventoryPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm"
@@ -754,14 +761,14 @@ function InventorySelectionInline({
               onClick={loadInventory}
               className="rounded-md bg-warning px-3 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
             >
-              Search
+              {t("searchAction")}
             </button>
             <button
               type="button"
               onClick={() => setShowBrowser(false)}
               className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
-              Close
+              {t("close")}
             </button>
           </div>
           {loading ? (
@@ -905,11 +912,11 @@ function Navbar({
   onLogout: () => void;
 }) {
   return (
-  <header className="sticky top-0 z-50 border-b bg-warning text-warning-foreground">
+  <header className="border-b bg-gradient-to-r from-warning via-warning/95 to-warning/90 text-warning-foreground">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded bg-warning-foreground/10 text-warning-foreground grid place-items-center font-extrabold">A</div>
+            <div className="h-8 w-8 rounded-lg bg-warning-foreground/15 text-warning-foreground grid place-items-center font-extrabold shadow-sm">A</div>
             <span className="text-xl md:text-2xl font-bold tracking-tight text-warning-foreground">{t("appTitle")}</span>
           </div>
           <div className="flex items-center gap-3">
@@ -918,14 +925,14 @@ function Navbar({
             </span>
             <button
               onClick={onToggleLanguage}
-              className="inline-flex items-center gap-2 rounded-md border border-warning-foreground/30 px-3 py-1.5 text-sm font-semibold text-warning-foreground shadow-sm hover:bg-warning-foreground/10 active:bg-warning-foreground/15"
+              className="inline-flex items-center gap-2 rounded-lg border border-warning-foreground/30 px-3 py-1.5 text-sm font-semibold text-warning-foreground shadow-sm hover:bg-warning-foreground/10 active:bg-warning-foreground/15 transition-all duration-200 hover:scale-105"
               aria-label={t("language")}
             >
               <span>{language === "en" ? t("arabic") : t("english")}</span>
             </button>
             <button
               onClick={onLogout}
-              className="inline-flex items-center gap-2 rounded-md bg-warning-foreground px-3 py-1.5 text-sm font-semibold text-warning shadow-sm hover:bg-warning-foreground/90 active:bg-warning-foreground/80"
+              className="inline-flex items-center gap-2 rounded-lg bg-warning-foreground px-3 py-1.5 text-sm font-semibold text-warning shadow-sm hover:bg-warning-foreground/90 active:bg-warning-foreground/80 transition-all duration-200 hover:scale-105"
             >
               {t("logout")}
             </button>
@@ -985,40 +992,55 @@ function LoginView({
   }
 
   return (
-  <div className={clsx("min-h-screen grid place-items-center bg-background", isAr && "text-right")}> 
-  <div className="w-full max-w-md rounded-xl border border-border bg-card/90 p-6 shadow-sm">
-        <h1 className="mb-4 text-2xl font-semibold tracking-tight">{t("loginTitle")}</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+  <div className={clsx("min-h-screen grid place-items-center bg-gradient-to-br from-background to-secondary/30", isAr && "text-right")}> 
+  <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+        <div className="mb-6">
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-warning grid place-items-center font-extrabold text-white text-2xl shadow-lg mb-4 mx-auto">A</div>
+          <h1 className="text-2xl font-bold tracking-tight text-center">{t("loginTitle")}</h1>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">
+            <label className="mb-2 block text-sm font-bold text-primary">
               {t("emailOrUsername")}
             </label>
             <input
               type="text"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+              placeholder="your.email@example.com"
+              className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               dir={isAr ? "rtl" : "ltr"}
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("password")}</label>
+            <label className="mb-2 block text-sm font-bold text-primary">{t("password")}</label>
             <input
               type="password"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+              placeholder="Enter your password"
+              className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               dir={isAr ? "rtl" : "ltr"}
             />
           </div>
-          {/* Role is determined by backend; no role selection */}
-          <button
-            type="submit"
-            disabled={!identifier || !password || submitting}
-            className="w-full rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? t("loading") : t("login")}
-          </button>
+          <div className="pt-2">
+            {(!identifier || !password) && (
+              <p className="text-xs text-red-600 font-semibold mb-3 text-center">⚠ Please enter both email and password</p>
+            )}
+            <button
+              type="submit"
+              disabled={!identifier || !password || submitting}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-warning to-warning/90 px-6 py-3 text-base font-bold text-warning-foreground shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 transition-all duration-200 hover:scale-105"
+            >
+              {submitting && (
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {submitting ? t("loading") : t("login")}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -1042,24 +1064,24 @@ function RequestCard({
     <button
       onClick={onClick}
       className={clsx(
-        "w-full rounded-lg border p-3 text-start shadow-sm transition hover:shadow-md",
+        "w-full rounded-lg border p-3 text-start shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01]",
     "border-border bg-card",
-  selected && "ring-2 ring-warning border-warning"
+  selected && "ring-2 ring-warning border-warning bg-warning/5"
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">{pr.title}</div>
-          <div className="mt-1 text-xs text-subtext truncate">
-            {t("requester")}: {pr.requester}
+          <div className="truncate text-sm font-bold text-foreground">{pr.title}</div>
+          <div className="mt-1 text-xs truncate">
+            <span className="font-semibold text-primary">{t("requester")}:</span> <span className="text-foreground">{pr.requester}</span>
           </div>
-          <div className="mt-0.5 text-xs text-subtext">
-            {t("submitted")}: {new Date(pr.submittedDate).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}
+          <div className="mt-0.5 text-xs">
+            <span className="font-semibold text-primary">{t("submitted")}:</span> <span className="text-subtext">{new Date(pr.submittedDate).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}</span>
           </div>
         </div>
         <span
           className={clsx(
-            "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ring-1",
+            "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ring-1 shadow-sm",
             statusBadgeColor(pr.status)
           )}
         >
@@ -1270,8 +1292,17 @@ function RequestDetailView({
       {/* Information card */}
   <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("information")}</h2>
-           <span className={clsx("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", statusBadgeColor(pr.status))}>{pr.status}</span>
+          {lang === 'ar' ? (
+            <>
+              <span className={clsx("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", statusBadgeColor(pr.status))}>{pr.status}</span>
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("information")}</h2>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("information")}</h2>
+              <span className={clsx("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", statusBadgeColor(pr.status))}>{pr.status}</span>
+            </>
+          )}
          </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -1298,76 +1329,76 @@ function RequestDetailView({
             <>
               {pr.clientName && (
                 <div>
-                  <div className="text-sm text-subtext">{t("clientName")}</div>
-                  <div className="text-sm font-medium">{pr.clientName}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("clientName")}</div>
+                  <div className="text-sm font-bold text-foreground">{pr.clientName}</div>
                 </div>
               )}
               {pr.location && (
                 <div>
-                  <div className="text-sm text-subtext">{t("location")}</div>
-                  <div className="text-sm font-medium">{pr.location}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("location")}</div>
+                  <div className="text-sm font-bold text-foreground">{pr.location}</div>
                 </div>
               )}
               {pr.startTime && (
                 <div>
-                  <div className="text-sm text-subtext">{t("startTime")}</div>
-                  <div className="text-sm font-medium">{new Date(pr.startTime).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("startTime")}</div>
+                  <div className="text-sm font-bold text-foreground">{new Date(pr.startTime).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
                 </div>
               )}
               {pr.endTime && (
                 <div>
-                  <div className="text-sm text-subtext">{t("endTime")}</div>
-                  <div className="text-sm font-medium">{new Date(pr.endTime).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("endTime")}</div>
+                  <div className="text-sm font-bold text-foreground">{new Date(pr.endTime).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
                 </div>
               )}
               {typeof pr.totalCost === 'number' && (
                 <div>
-                  <div className="text-sm text-subtext">{t("totalCost")}</div>
-                  <div className="text-sm font-medium">{formatCurrency(pr.totalCost, lang)}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("totalCost")}</div>
+                  <div className="text-base font-bold text-warning">{formatCurrency(pr.totalCost, lang)}</div>
                 </div>
               )}
               {typeof pr.totalBenefit === 'number' && (
                 <div>
-                  <div className="text-sm text-subtext">{t("totalBenefit")}</div>
-                  <div className="text-sm font-medium">{formatCurrency(pr.totalBenefit, lang)}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("totalBenefit")}</div>
+                  <div className="text-base font-bold text-success">{formatCurrency(pr.totalBenefit, lang)}</div>
                 </div>
               )}
               {typeof pr.totalPrice === 'number' && (
                 <div>
-                  <div className="text-sm text-subtext">{t("totalPrice")}</div>
-                  <div className="text-sm font-medium">{formatCurrency(pr.totalPrice, lang)}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("totalPrice")}</div>
+                  <div className="text-base font-bold text-warning">{formatCurrency(pr.totalPrice, lang)}</div>
                 </div>
               )}
               {pr.activeFrom && (
                 <div>
-                  <div className="text-sm text-subtext">{t("activeFrom")}</div>
-                  <div className="text-sm font-medium">{new Date(pr.activeFrom).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
+                  <div className="text-xs font-semibold text-primary uppercase tracking-wide">{t("activeFrom")}</div>
+                  <div className="text-sm font-bold text-foreground">{new Date(pr.activeFrom).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</div>
                 </div>
               )}
             </>
           )}
         </div>
         <div className="mt-4">
-          <div className="text-sm text-subtext">{t("description")}</div>
-          <p className="text-sm leading-6">{pr.description}</p>
+          <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">{t("description")}</div>
+          <p className="text-sm leading-6 text-foreground">{pr.description}</p>
         </div>
         <div className="mt-4">
-          <div className="text-sm text-subtext mb-2">{t("items")}</div>
-          <div className="overflow-hidden rounded-lg border border-border">
+          <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">{t("items")}</div>
+          <div className="overflow-hidden rounded-lg border border-border shadow-sm">
             <table className="min-w-full divide-y divide-border">
-              <thead className="bg-warning/20">
+              <thead className="bg-gradient-to-r from-primary/10 via-warning/10 to-primary/10">
                 <tr>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">{t("item")}</th>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">{t("quantity")}</th>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">{t("estimatedCost")}</th>
+                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("item")}</th>
+                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("quantity")}</th>
+                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("estimatedCost")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border bg-card/90">
+              <tbody className="divide-y divide-border bg-card">
                 {pr.items.map((it, idx) => (
-                  <tr key={idx}>
-                    <td className="px-3 py-2 text-sm">{it.name}</td>
-                    <td className="px-3 py-2 text-sm">{it.quantity}</td>
-                    <td className="px-3 py-2 text-sm">{formatCurrency(it.estimatedCost, lang)}</td>
+                  <tr key={idx} className="hover:bg-secondary/30 transition-colors">
+                    <td className="px-3 py-2 text-sm font-semibold text-foreground">{it.name}</td>
+                    <td className="px-3 py-2 text-sm font-semibold text-foreground">{it.quantity}</td>
+                    <td className="px-3 py-2 text-sm font-bold text-warning">{formatCurrency(it.estimatedCost, lang)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1379,7 +1410,7 @@ function RequestDetailView({
       
 
   <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("workflowHistory")}</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("workflowHistory")}</h2>
         <ol className="mt-4 space-y-3">
           <li className="text-sm">
             • {t("createdBy")} {pr.requester} — {new Date(pr.submittedDate).toLocaleString(lang === "ar" ? "ar-EG" : "en-US")}
@@ -1546,7 +1577,7 @@ function RequestDetailView({
             <div className="flex">
               <button
                 onClick={handleAdminDelete}
-                className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-red-700 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('deleteRequest')}
               </button>
@@ -1557,7 +1588,7 @@ function RequestDetailView({
               <button
                 onClick={handleApprove}
                 disabled={busy === "approve"}
-                className="inline-flex items-center justify-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {busy === "approve" ? "..." : t("approve")}
               </button>
@@ -1566,13 +1597,13 @@ function RequestDetailView({
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("rejectionReason")}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                 />
               </div>
               <button
                 onClick={handleReject}
                 disabled={!reason.trim() || busy === "reject"}
-                className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {busy === "reject" ? "..." : t("reject")}
               </button>
@@ -1584,7 +1615,7 @@ function RequestDetailView({
               <button
                 onClick={handleApprove}
                 disabled={busy === "approve" || (canFinalManagerPurchase && !pr.selectedQuoteId)}
-                className="inline-flex items-center justify-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {busy === "approve" ? "..." : t("approve")}
               </button>
@@ -1595,13 +1626,13 @@ function RequestDetailView({
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       placeholder={t("rejectionReason")}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                     />
                   </div>
                   <button
                     onClick={handleReject}
                     disabled={!reason.trim() || busy === "reject"}
-                    className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
+                    className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
                   >
                     {busy === "reject" ? "..." : t("reject")}
                   </button>
@@ -1614,14 +1645,21 @@ function RequestDetailView({
 
           {/* Contextual hint when no actions are available */}
           {!hasAnyActionVisible && (
-            <p className="text-sm text-subtext">{computeActionHint()}</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm text-blue-800 font-medium">{computeActionHint()}</p>
+              </div>
+            </div>
           )}
 
           {canRequesterMarkDone && (
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onMarkProjectDone(pr.id)}
-                className="inline-flex items-center justify-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('markProjectDone')}
               </button>
@@ -1632,7 +1670,7 @@ function RequestDetailView({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onConfirmClientPaid(pr.id)}
-                className="inline-flex items-center justify-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('confirmClientPaid')}
               </button>
@@ -1644,7 +1682,7 @@ function RequestDetailView({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onSubmitDraft(pr.id)}
-                className="inline-flex items-center justify-center rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('submitRequest')}
               </button>
@@ -1719,15 +1757,31 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
   return (
     <section className="rounded-xl border border-border bg-card/90 p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
-        <button
-          type="button"
-          onClick={refresh}
-          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
-          disabled={isLoading}
-        >
-          {t('refresh')}
-        </button>
+        {lang === 'ar' ? (
+          <>
+            <button
+              type="button"
+              onClick={refresh}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+              disabled={isLoading}
+            >
+              {t('refresh')}
+            </button>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
+            <button
+              type="button"
+              onClick={refresh}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+              disabled={isLoading}
+            >
+              {t('refresh')}
+            </button>
+          </>
+        )}
       </div>
       <div className="mt-3 space-y-3 max-h-[70vh] overflow-auto">
         {isLoading ? (
@@ -1767,22 +1821,36 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
         )}
       </div>
       <div className="mt-4">
+        <label className="mb-2 block text-sm font-bold text-primary">{t("writeComment")}</label>
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           rows={4}
-          placeholder={t("writeComment")}
+          placeholder="Share your thoughts or feedback..."
           onKeyDown={onKey}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+          className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
           aria-label={t('writeComment')}
         />
-        <div className="mt-2 flex justify-between text-xs text-subtext">
-          <div>{t('postShortcutHint')}</div>
+        <div className="mt-3 flex justify-between items-center">
+          <div className="text-xs text-subtext font-medium">
+            <span className="inline-flex items-center gap-1">
+              <kbd className="px-2 py-1 text-xs font-semibold bg-secondary rounded border border-border">Ctrl</kbd>
+              <span>+</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-secondary rounded border border-border">Enter</kbd>
+              <span className="ml-1">to post quickly</span>
+            </span>
+          </div>
           <button
             onClick={post}
             disabled={posting || !newComment.trim()}
-            className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground shadow-sm hover:bg-warning/90 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-warning px-5 py-2.5 text-sm font-bold text-warning-foreground shadow-md hover:bg-warning/90 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
           >
+            {posting && (
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
             {posting ? t('posting') : t('post')}
           </button>
         </div>
@@ -1850,7 +1918,7 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
   <section className="rounded-xl border border-border bg-card/90 p-5 shadow-sm">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("details")}</h2>
         <div className="mt-4 space-y-4">
@@ -1893,60 +1961,100 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
       </section>
 
   <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("items")}</h2>
-          <button type="button" onClick={addItem} className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-warning-foreground hover:bg-warning/90">+
-          </button>
+        <div className="flex items-center justify-between mb-2">
+          {lang === 'ar' ? (
+            <>
+              <button type="button" onClick={addItem} className="inline-flex items-center gap-1.5 rounded-lg bg-warning px-4 py-2 text-sm font-bold text-warning-foreground hover:bg-warning/90 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+              <div className="text-right">
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("items")}</h2>
+                <p className="text-xs text-subtext mt-1">Add items to your request (minimum 1 required)</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("items")}</h2>
+                <p className="text-xs text-subtext mt-1">Add items to your request (minimum 1 required)</p>
+              </div>
+              <button type="button" onClick={addItem} className="inline-flex items-center gap-1.5 rounded-lg bg-warning px-4 py-2 text-sm font-bold text-warning-foreground hover:bg-warning/90 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+            </>
+          )}
          </div>
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           {items.map((it, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-3">
+            <div key={idx} className="grid grid-cols-12 gap-3 p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
               <input
-                placeholder={t("item")}
+                placeholder="Item name (e.g., Laptop, Office Chair)"
                 value={it.name}
                 onChange={(e) => updateItem(idx, { name: e.target.value })}
-                className="col-span-5 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                className="col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
               <input
                 type="number"
                 min={1}
-                placeholder={t("quantity")}
+                placeholder="Qty"
                 value={it.quantity}
                 onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) || 0 })}
-                className="col-span-3 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                className="col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder={t("estimatedCost")}
-                value={it.estimatedCost}
-                onChange={(e) => updateItem(idx, { estimatedCost: Number(e.target.value) || 0 })}
-                className="col-span-3 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
-              />
+              <div className="col-span-4 relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-subtext">SAR</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0.00"
+                  value={it.estimatedCost}
+                  onChange={(e) => updateItem(idx, { estimatedCost: Number(e.target.value) || 0 })}
+                  className="w-full rounded-lg border border-border bg-background pl-12 pr-3 py-2 text-sm font-bold shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
+                />
+              </div>
               <div className="col-span-1 flex items-center justify-end">
-                <button type="button" onClick={() => removeItem(idx)} className="rounded-md border border-border px-2 py-1 text-sm hover:bg-secondary">
+                <button type="button" onClick={() => removeItem(idx)} className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
                   ×
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-subtext">{t("totalEstimatedCost")}</div>
-          <div className="text-sm font-semibold">{formatCurrency(total, lang)}</div>
+        <div className="mt-4 flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-warning/10 to-primary/10 border border-warning/30">
+          <div className="text-sm font-bold text-primary uppercase tracking-wide">{t("totalEstimatedCost")}</div>
+          <div className="text-xl font-bold text-warning">{formatCurrency(total, lang)}</div>
         </div>
       </section>
 
-      <div className="flex items-center justify-end gap-3">
-  <button type="button" onClick={onCancel} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">{t("cancel")}</button>
-        <button
-          type="submit"
-          disabled={!title.trim() || items.length === 0 || submitting}
-          className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-60"
-        >
-          {submitting ? "..." : t("submitRequest")}
-        </button>
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
+        <div className="text-xs text-subtext">
+          {!title.trim() && <span className="text-red-600 font-semibold">⚠ Title required</span>}
+          {title.trim() && items.length === 0 && <span className="text-red-600 font-semibold">⚠ Add at least one item</span>}
+          {title.trim() && items.length > 0 && !submitting && <span className="text-green-600 font-semibold">✓ Ready to submit</span>}
+        </div>
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} className="rounded-lg border-2 border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary hover:border-primary transition-all duration-200">{t("cancel")}</button>
+          <button
+            type="submit"
+            disabled={!title.trim() || items.length === 0 || submitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-warning px-6 py-2.5 text-sm font-bold text-warning-foreground hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            {submitting && (
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {submitting ? "Submitting..." : t("submitRequest")}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -2071,7 +2179,7 @@ function ProjectCreateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <section className="rounded-xl border border-border bg-card/90 p-5 shadow-sm">
         <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("projectDetails")}</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -2101,7 +2209,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("location")}</label>
+            <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t("location")}</label>
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -2109,7 +2217,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("startTime")}</label>
+            <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t("startTime")}</label>
             <input
               type="datetime-local"
               value={startTime}
@@ -2118,7 +2226,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("endTime")}</label>
+            <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t("endTime")}</label>
             <input
               type="datetime-local"
               value={endTime}
@@ -2127,7 +2235,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("totalCost")}</label>
+            <label className="mb-1 block text-xs font-bold text-warning uppercase tracking-wide">{t("totalCost")}</label>
             <input
               type="number"
               min={0}
@@ -2138,7 +2246,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("totalBenefit")}</label>
+            <label className="mb-1 block text-xs font-bold text-success uppercase tracking-wide">{t("totalBenefit")}</label>
             <input
               type="number"
               min={0}
@@ -2149,7 +2257,7 @@ function ProjectCreateForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-subtext">{t("totalPrice")}</label>
+            <label className="mb-1 block text-xs font-bold text-warning uppercase tracking-wide">{t("totalPrice")}</label>
             <input
               type="number"
               min={0}
@@ -2163,40 +2271,66 @@ function ProjectCreateForm({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("items")}</h2>
-          <button type="button" onClick={addItem} className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-warning-foreground hover:bg-warning/90">+
-          </button>
+        <div className="flex items-center justify-between mb-2">
+          {lang === 'ar' ? (
+            <>
+              <button type="button" onClick={addItem} className="inline-flex items-center gap-1.5 rounded-lg bg-warning px-4 py-2 text-sm font-bold text-warning-foreground hover:bg-warning/90 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+              <div className="text-right">
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("items")}</h2>
+                <p className="text-xs text-subtext mt-1">{t("optionalItemsHelp")}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("items")}</h2>
+                <p className="text-xs text-subtext mt-1">{t("optionalItemsHelp")}</p>
+              </div>
+              <button type="button" onClick={addItem} className="inline-flex items-center gap-1.5 rounded-lg bg-warning px-4 py-2 text-sm font-bold text-warning-foreground hover:bg-warning/90 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+            </>
+          )}
         </div>
-        <p className="mt-2 text-xs text-subtext">{t("optionalItemsHelp")}</p>
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           {items.map((it, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-3">
+            <div key={idx} className="grid grid-cols-12 gap-3 p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
               <input
-                placeholder={t("item")}
+                placeholder="Item name (e.g., Scaffolding, Paint)"
                 value={it.name}
                 onChange={(e) => updateItem(idx, { name: e.target.value })}
-                className="col-span-5 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                className="col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
               <input
                 type="number"
                 min={1}
-                placeholder={t("quantity")}
+                placeholder="Qty"
                 value={it.quantity}
                 onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) || 0 })}
-                className="col-span-3 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                className="col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder={t("estimatedCost")}
-                value={it.estimatedCost}
-                onChange={(e) => updateItem(idx, { estimatedCost: Number(e.target.value) || 0 })}
-                className="col-span-3 rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
-              />
+              <div className="col-span-4 relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-subtext">SAR</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0.00"
+                  value={it.estimatedCost}
+                  onChange={(e) => updateItem(idx, { estimatedCost: Number(e.target.value) || 0 })}
+                  className="w-full rounded-lg border border-border bg-background pl-12 pr-3 py-2 text-sm font-bold shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
+                />
+              </div>
               <div className="col-span-1 flex items-center justify-end">
-                <button type="button" onClick={() => removeItem(idx)} className="rounded-md border border-border px-2 py-1 text-sm hover:bg-secondary">
+                <button type="button" onClick={() => removeItem(idx)} className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
                   ×
                 </button>
               </div>
@@ -2227,8 +2361,8 @@ function ProjectCreateForm({
       </section>
 
       <section className="rounded-xl border border-border bg-card/90 p-5 shadow-sm">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight">Inventory Items (Optional)</h2>
-        <p className="mt-2 text-sm text-subtext">Select tools and equipment needed for this project</p>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("inventoryItemsOptional")}</h2>
+        <p className="mt-2 text-sm text-subtext">{t("inventoryItemsHelp")}</p>
         <div className="mt-4">
           <InventorySelectionInline
             selectedItems={inventoryItems}
@@ -2241,15 +2375,27 @@ function ProjectCreateForm({
         </div>
       </section>
 
-      <div className="flex items-center justify-end gap-3">
-        <button type="button" onClick={onCancel} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">{t("cancel")}</button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-60"
-        >
-          {submitting ? "..." : t("submitProject")}
-        </button>
+      <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
+        <div className="text-xs text-subtext">
+          {Object.keys(errors).length > 0 && <span className="text-red-600 font-semibold">⚠ {Object.keys(errors).length} error(s) - check form fields</span>}
+          {Object.keys(errors).length === 0 && !submitting && <span className="text-green-600 font-semibold">✓ Ready to submit</span>}
+        </div>
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} className="rounded-lg border-2 border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary hover:border-primary transition-all duration-200">{t("cancel")}</button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-warning px-6 py-2.5 text-sm font-bold text-warning-foreground hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+          >
+            {submitting && (
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {submitting ? "Submitting..." : t("submitProject")}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -2278,18 +2424,68 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
     } finally { setBusy(false); }
   }
   return (
-    <form onSubmit={submit} className="space-y-2">
-      <input value={name} onChange={(e)=>setName(e.target.value)} placeholder={t('userName')} className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs" />
-      <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder={t('userEmail')} className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs" />
-      <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder={t('userPassword')} className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs" />
-      <select value={role} onChange={(e)=>setRole(e.target.value)} className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs">
-        {['USER','DIRECT_MANAGER','ACCOUNTANT','FINAL_MANAGER','ADMIN'].map(r => (
-          <option key={r} value={r}>{r}</option>
-        ))}
-      </select>
-      <button type="submit" disabled={busy} className="w-full rounded-md bg-warning px-3 py-1.5 text-xs font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-60">
-        {busy ? '...' : t('create')}
-      </button>
+    <form onSubmit={submit} className="space-y-3">
+      <div>
+        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userName')}</label>
+        <input 
+          value={name} 
+          onChange={(e)=>setName(e.target.value)} 
+          placeholder="Enter full name" 
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200" 
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userEmail')}</label>
+        <input 
+          type="email"
+          value={email} 
+          onChange={(e)=>setEmail(e.target.value)} 
+          placeholder="user@example.com" 
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200" 
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-bold text-warning uppercase tracking-wide">{t('userPassword')}</label>
+        <input 
+          type="password" 
+          value={password} 
+          onChange={(e)=>setPassword(e.target.value)} 
+          placeholder="Min. 8 characters" 
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200" 
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">Role</label>
+        <select 
+          value={role} 
+          onChange={(e)=>setRole(e.target.value)} 
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+        >
+          {['USER','DIRECT_MANAGER','ACCOUNTANT','FINAL_MANAGER','ADMIN'].map(r => (
+            <option key={r} value={r}>{r.replace('_', ' ')}</option>
+          ))}
+        </select>
+      </div>
+      <div className="pt-2">
+        {!name.trim() || !email.trim() || !password ? (
+          <p className="text-xs text-red-600 font-semibold mb-2">⚠ All fields are required</p>
+        ) : (
+          <p className="text-xs text-green-600 font-semibold mb-2">✓ Ready to create user</p>
+        )}
+        <button 
+          type="submit" 
+          disabled={busy || !name.trim() || !email.trim() || !password} 
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-warning px-4 py-2.5 text-sm font-bold text-warning-foreground hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+        >
+          {busy && (
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          {busy ? 'Creating...' : t('create')}
+        </button>
+      </div>
     </form>
   );
 }
@@ -2727,40 +2923,48 @@ const App: React.FC = () => {
 
   return (
   <div className="min-h-screen bg-background text-foreground">
-      <Navbar
-        t={t}
-        language={language}
-        onToggleLanguage={handleToggleLanguage}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
+      <div className="sticky top-0 z-40 backdrop-blur-sm bg-card/80 border-b border-border shadow-sm">
+        <Navbar
+          t={t}
+          language={language}
+          onToggleLanguage={handleToggleLanguage}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+      </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-border bg-card/50">
+      <div className="border-b border-border bg-card/80 backdrop-blur-sm shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <nav className="flex gap-4">
+          <nav className="flex gap-6">
             <button
               onClick={() => setSection("requests")}
               className={clsx(
-                "border-b-2 px-4 py-3 text-sm font-semibold transition-colors",
+                "border-b-2 px-4 py-3 text-sm font-semibold transition-all duration-200 relative",
                 section === "requests"
                   ? "border-warning text-warning"
-                  : "border-transparent text-subtext hover:text-foreground"
+                  : "border-transparent text-subtext hover:text-foreground hover:border-border"
               )}
             >
               {t("requests")}
+              {section === "requests" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-warning via-warning/90 to-warning/40 animate-in fade-in slide-in-from-bottom-2"></span>
+              )}
             </button>
             {(currentUser.apiRole === "DIRECT_MANAGER" || currentUser.apiRole === "FINAL_MANAGER" || currentUser.apiRole === "ADMIN") && (
               <button
                 onClick={() => setSection("inventory")}
                 className={clsx(
-                  "border-b-2 px-4 py-3 text-sm font-semibold transition-colors",
+                  "border-b-2 px-4 py-3 text-sm font-semibold transition-all duration-200 relative",
                   section === "inventory"
                     ? "border-warning text-warning"
-                    : "border-transparent text-subtext hover:text-foreground"
+                    : "border-transparent text-subtext hover:text-foreground hover:border-border"
                 )}
               >
                 {t("inventory")}
+                {section === "inventory" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-warning via-warning/90 to-warning/40 animate-in fade-in slide-in-from-bottom-2"></span>
+                )}
               </button>
             )}
           </nav>
@@ -2782,14 +2986,14 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
           {/* Column 1: Request List */}
           <section className="md:col-span-3">
-            <div className="rounded-xl border border-border bg-card/80 shadow-sm">
+            <div className="rounded-xl border border-border bg-card shadow-md hover:shadow-lg transition-shadow duration-200">
               <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
                  <button
                    onClick={() => {
                      setView("creating");
                      setSelectedRequest(null);
                    }}
-                   className="rounded-md bg-warning px-3 py-1.5 text-sm font-semibold text-warning-foreground hover:bg-warning/90"
+                   className="rounded-lg bg-warning px-3 py-1.5 text-sm font-semibold text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md hover:scale-105"
                  >
                    {t("createNew")}
                  </button>
@@ -2798,7 +3002,7 @@ const App: React.FC = () => {
                      setView("creatingProject");
                      setSelectedRequest(null);
                    }}
-                   className="rounded-md border border-warning/50 px-3 py-1.5 text-sm font-semibold hover:bg-secondary"
+                   className="rounded-lg border-2 border-primary/50 px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary/10 hover:border-primary transition-all duration-200"
                  >
                    {t("submitProject")}
                  </button>
@@ -2810,7 +3014,7 @@ const App: React.FC = () => {
                  />
                 <button
                   onClick={() => setShowFilters((s) => !s)}
-                  className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  className="rounded-lg border-2 border-border px-3 py-1.5 text-sm font-semibold hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-200"
                 >
                   {t("filters")}
                 </button>
@@ -2838,10 +3042,10 @@ const App: React.FC = () => {
                             key={s}
                             onClick={() => toggleStatus(s)}
                             className={clsx(
-                              "rounded-full border px-2 py-1 text-xs",
+                              "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200",
                               filterStatuses.includes(s)
-                                ? "bg-warning text-warning-foreground border-warning"
-                                : "border-border hover:bg-secondary"
+                                ? "bg-warning text-warning-foreground border-warning shadow-md scale-105"
+                                : "border-border hover:bg-secondary hover:border-primary hover:scale-105"
                             )}
                           >
                             {s}
@@ -2850,55 +3054,68 @@ const App: React.FC = () => {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-subtext">{t("requesterFilter")}</label>
+                      <label className="text-xs font-semibold text-primary">{t("requesterFilter")}</label>
                       <input
                         value={filterRequester}
                         onChange={(e) => setFilterRequester(e.target.value)}
-                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        placeholder="Enter name..."
+                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-subtext">{t("dateFrom")}</label>
+                      <label className="text-xs font-semibold text-primary">{t("dateFrom")}</label>
                       <input
                         type="date"
                         value={filterDateFrom}
                         onChange={(e) => setFilterDateFrom(e.target.value)}
-                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-subtext">{t("dateTo")}</label>
+                      <label className="text-xs font-semibold text-primary">{t("dateTo")}</label>
                       <input
                         type="date"
                         value={filterDateTo}
                         onChange={(e) => setFilterDateTo(e.target.value)}
-                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-subtext">{t("minCost")}</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={filterMinCost}
-                        onChange={(e) => setFilterMinCost(e.target.value)}
-                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
-                      />
+                      <label className="text-xs font-semibold text-warning">{t("minCost")}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-subtext">SAR</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={filterMinCost}
+                          onChange={(e) => setFilterMinCost(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full rounded-md border border-border bg-background pl-12 pr-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <label className="text-xs text-subtext">{t("maxCost")}</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={filterMaxCost}
-                        onChange={(e) => setFilterMaxCost(e.target.value)}
-                        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
-                      />
+                      <label className="text-xs font-semibold text-warning">{t("maxCost")}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-subtext">SAR</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={filterMaxCost}
+                          onChange={(e) => setFilterMaxCost(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full rounded-md border border-border bg-background pl-12 pr-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
+                        />
+                      </div>
                     </div>
-                    <div className="flex justify-end">
-                      <button onClick={clearFilters} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+                    <div className="flex justify-between items-center pt-2 border-t border-border">
+                      <span className="text-xs text-subtext">{filtered.length} {filtered.length === 1 ? 'result' : 'results'}</span>
+                      <button onClick={clearFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all duration-200">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                         {t("clearFilters")}
                       </button>
                     </div>
@@ -2907,9 +3124,30 @@ const App: React.FC = () => {
               )}
               <div className="max-h-[70vh] space-y-2 overflow-auto p-3">
                 {isLoading ? (
-                  <div className="py-10 text-center text-sm text-subtext">{t("loading")}</div>
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4].map((n) => (
+                      <div key={n} className="rounded-lg border border-border bg-card p-3 animate-pulse">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-secondary rounded w-3/4"></div>
+                            <div className="h-3 bg-secondary rounded w-1/2"></div>
+                            <div className="h-3 bg-secondary rounded w-2/3"></div>
+                          </div>
+                          <div className="h-6 w-20 bg-secondary rounded-full"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : filtered.length === 0 ? (
-                  <div className="py-10 text-center text-sm text-subtext">{t("noRequests")}</div>
+                  <div className="py-12 text-center animate-in fade-in zoom-in duration-300">
+                    <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{t("noRequests")}</p>
+                    <p className="text-xs text-subtext mt-1">Start by creating a new request above</p>
+                  </div>
                 ) : (
                   filtered.map((pr) => (
                     <RequestCard
