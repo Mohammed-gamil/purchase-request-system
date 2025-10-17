@@ -639,6 +639,45 @@ export const inventoryApi = {
   },
 };
 
+// Notifications API
+export const notificationsApi = {
+  // Get all notifications for current user
+  getNotifications: async (params?: {
+    per_page?: number;
+    unread_only?: boolean;
+  }): Promise<ApiResponse<Array<{
+    id: string | number;
+    title: string;
+    message: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+    read: boolean;
+    created_at: string;
+    related_request_id?: string | number;
+  }>>> => {
+    return apiClient.get('/notifications', params);
+  },
+
+  // Mark notification as read
+  markAsRead: async (id: string | number): Promise<ApiResponse<void>> => {
+    return apiClient.put(`/notifications/${id}/read`);
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async (): Promise<ApiResponse<void>> => {
+    return apiClient.put('/notifications/read-all');
+  },
+
+  // Delete notification
+  deleteNotification: async (id: string | number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/notifications/${id}`);
+  },
+
+  // Get unread count
+  getUnreadCount: async (): Promise<ApiResponse<{ count: number }>> => {
+    return apiClient.get('/notifications/unread-count');
+  },
+};
+
 // Export default api object for backward compatibility
 const api = {
   auth: authApi,

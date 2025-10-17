@@ -1,82 +1,161 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
-import { authService } from "@/lib/auth";
-import { approvalsApi, requestsApi, adminApi, apiClient, notificationsApi } from "@/lib/api";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/hooks/use-language";
+import { useTranslation } from "@/hooks/use-translation";
+
+// Main App component with routing
+// Now uses distributed page components for better code organization
+
+import Navbar from "@/components/layout/Navbar";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import PRList from "@/pages/PRList";
+import PRCreate from "@/pages/PRCreate";
+import PRDetails from "@/pages/PRDetails";
 import InventoryManagement from "@/pages/InventoryManagement";
-import {
-  Plus,
-  FileText,
-  FolderPlus,
-  ChevronRight,
-  Filter,
-  X,
-  Settings,
-  Menu,
-  Users,
-  Home,
-  Bell,
-  Search,
-  CheckSquare,
-  Clock,
-  Calendar,
-  TrendingUp,
-  Download,
-  BarChart3,
-  Activity,
-} from "lucide-react";
+import Approvals from "@/pages/Approvals";
+import AdminUsers from "@/pages/AdminUsers";
+import AdminSettings from "@/pages/AdminSettings";
+import UserProfile from "@/pages/UserProfile";
+import Reports from "@/pages/Reports";
+import NotFound from "@/pages/NotFound";
+import Unauthorized from "@/pages/Unauthorized";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
-// Single-file SPA for Purchase Requests styled like an email client
-// - TypeScript + React Hooks
-// - Tailwind CSS UI
-// - i18n (en/ar) with LTR/RTL
-// - Mock async actions (TODO: Connect to backend API)
+/**
+ * Main Application Component
+ * 
+ * This component serves as the root of the application with:
+ * - Route configuration for all pages
+ * - Layout wrapper with Navbar
+ * - Authentication guards for protected routes
+ * - Language/theme state management via stores
+ */
+const App: React.FC = () => {
+  const { user, isAuthenticated } = useAuthStore();
+  const { direction } = useLanguageStore();
+  const { t } = useTranslation();
 
-// ----------------------
-// Types
-// ----------------------
-export type PRItem = { name: string; quantity: number; estimatedCost: number };
+  // Apply RTL/LTR direction to root
+  React.useEffect(() => {
+    document.documentElement.dir = direction;
+  }, [direction]);
 
-export type PurchaseRequest = {
-  id: string;
-  title: string;
-  requester: string;
-  requesterId?: string | number;
-  directManagerId?: string | number;
-  directManagerName?: string;
-  submittedDate: string; // ISO string
-  status: "Pending" | "Approved" | "Rejected" | "Awaiting Payment" | "Awaiting Selection" | "Active" | "Processed" | "Processing" | "Done" | "Paid";
-  rawState?: string;
-  type?: 'purchase' | 'project';
-  description: string;
-  items: PRItem[];
-  totalEstimatedCost: number;
-  quotes?: Array<{ id: string | number; vendorName: string; quoteTotal: number; fileUrl?: string; notes?: string }>;
-  selectedQuoteId?: string | number;
-  quotations?: string;
-  rejectionReason?: string;
-  // Project-specific fields
-  clientName?: string;
-  location?: string;
-  startTime?: string; // ISO string
-  endTime?: string;   // ISO string
-  totalCost?: number;
-  totalBenefit?: number;
-  totalPrice?: number;
-  activeFrom?: string; // ISO string
+  // If not authenticated, show login page
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-background" dir={direction}>
+        <Navbar />
+        
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <Routes>
+            {/* Dashboard - Home */}
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* Purchase Requests */}
+            <Route path="/prs" element={<PRList />} />
+            <Route 
+              path="/prs/create" 
+              element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <PRCreate />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/prs/:id" element={<PRDetails />} />
+            <Route 
+              path="/prs/:id/edit" 
+              element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <PRCreate />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Approvals - Manager/Accountant only */}
+            <Route 
+              path="/approvals" 
+              element={
+                <ProtectedRoute allowedRoles={['DIRECT_MANAGER', 'ACCOUNTANT', 'FINAL_MANAGER', 'ADMIN']}>
+                  <Approvals />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Inventory Management */}
+            <Route 
+              path="/inventory" 
+              element={
+                <ProtectedRoute allowedRoles={['DIRECT_MANAGER', 'FINAL_MANAGER', 'ADMIN']}>
+                  <InventoryManagement />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Reports */}
+            <Route 
+              path="/reports" 
+              element={
+                <ProtectedRoute allowedRoles={['ACCOUNTANT', 'FINAL_MANAGER', 'ADMIN']}>
+                  <Reports />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Pages */}
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <AdminSettings />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* User Profile */}
+            <Route path="/profile" element={<UserProfile />} />
+            
+            {/* Error Pages */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
 };
 
-export type User = {
-  id: string | number;
-  name: string;
-  role: "user" | "manager" | "accountant";
-  apiRole?: "USER" | "DIRECT_MANAGER" | "ACCOUNTANT" | "ADMIN" | "FINAL_MANAGER";
-};
+export default App;
 
-type Language = "en" | "ar";
+/* 
+ * Legacy code removed - now using distributed page components:
+ * - Login.tsx for authentication
+ * - Dashboard.tsx for home page
+ * - PRList.tsx for purchase request list
+ * - PRCreate.tsx for creating/editing PRs
+ * - PRDetails.tsx for PR details and approvals
+ * - InventoryManagement.tsx for inventory
+ * - Approvals.tsx for approval workflow
+ * - AdminUsers.tsx and AdminSettings.tsx for admin
+ * - Reports.tsx for analytics and reporting
+ */
 
-// ----------------------
-// Utilities
-// ----------------------
-const LS_KEYS = {
+const LS_KEYS_OLD_REFERENCE = {
   user: "app.currentUser",
   lang: "app.language",
   requests: "app.requests",
@@ -668,27 +747,27 @@ function seedMockRequests(): PurchaseRequest[] {
 function statusBadgeColor(status: PurchaseRequest["status"]) {
   switch (status) {
     case "Pending":
-      return "bg-gradient-to-r from-yellow-400 to-orange-400 text-white ring-yellow-300 shadow-lg";
+      return "bg-yellow-100 text-yellow-800 ring-yellow-200";
     case "Approved":
-      return "bg-gradient-to-r from-blue-500 to-cyan-500 text-white ring-blue-300 shadow-lg";
+      return "bg-blue-100 text-blue-800 ring-blue-200";
     case "Rejected":
-      return "bg-gradient-to-r from-red-500 to-pink-500 text-white ring-red-300 shadow-lg";
+      return "bg-red-100 text-red-800 ring-red-200";
     case "Awaiting Payment":
-      return "bg-gradient-to-r from-amber-500 to-yellow-500 text-white ring-amber-300 shadow-lg";
+      return "bg-warning text-warning-foreground ring-warning";
     case "Active":
-      return "bg-gradient-to-r from-green-500 to-emerald-500 text-white ring-green-300 shadow-lg animate-pulse";
+      return "bg-green-100 text-green-800 ring-green-200";
     case "Awaiting Selection":
-      return "bg-gradient-to-r from-purple-500 to-indigo-500 text-white ring-purple-300 shadow-lg";
+      return "bg-purple-100 text-purple-800 ring-purple-200";
     case "Processed":
-      return "bg-gradient-to-r from-blue-600 to-indigo-600 text-white ring-blue-400 shadow-lg";
+      return "bg-blue-200 text-blue-900 ring-blue-300";
     case "Processing":
-      return "bg-gradient-to-r from-amber-400 to-orange-400 text-white ring-amber-300 shadow-lg";
+      return "bg-amber-100 text-amber-800 ring-amber-200";
     case "Done":
-      return "bg-gradient-to-r from-emerald-600 to-green-600 text-white ring-emerald-400 shadow-lg";
+      return "bg-emerald-100 text-emerald-800 ring-emerald-200";
     case "Paid":
-      return "bg-gradient-to-r from-teal-500 to-cyan-500 text-white ring-teal-300 shadow-lg";
+      return "bg-teal-100 text-teal-800 ring-teal-200";
     default:
-      return "bg-gradient-to-r from-gray-400 to-gray-500 text-white ring-gray-300 shadow-md";
+      return "bg-muted text-foreground ring-border";
   }
 }
 
@@ -1074,81 +1153,42 @@ function RequestCard({
   onClick,
   t,
   lang,
-  isChecked,
-  onToggleCheck,
 }: {
   pr: PurchaseRequest;
   selected: boolean;
   onClick: () => void;
   t: (k: string) => string;
   lang: Language;
-  isChecked?: boolean;
-  onToggleCheck?: (id: string) => void;
 }) {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Approved": return "✓";
-      case "Rejected": return "✗";
-      case "Pending": return "⏳";
-      case "Paid": return "💰";
-      case "Done": return "✓✓";
-      default: return "📄";
-    }
-  };
-
   return (
-    <div
+    <button
+      onClick={onClick}
       className={clsx(
-        "w-full rounded-lg border p-3 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01] relative",
-        "border-border bg-card",
-        selected && "ring-2 ring-warning border-warning bg-warning/5"
+        "w-full rounded-lg border p-3 text-start shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01]",
+    "border-border bg-card",
+  selected && "ring-2 ring-warning border-warning bg-warning/5"
       )}
     >
-      <div className="flex items-start gap-3">
-        {onToggleCheck && (
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={(e) => {
-              e.stopPropagation();
-              onToggleCheck(pr.id);
-            }}
-            className="mt-1 h-4 w-4 rounded border-border accent-warning cursor-pointer"
-          />
-        )}
-        <button
-          onClick={onClick}
-          className="flex-1 text-start min-w-0"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-bold text-foreground flex items-center gap-2">
-                {pr.type === "project" && <FolderPlus className="h-4 w-4 text-primary inline" />}
-                {pr.title}
-              </div>
-              <div className="mt-1 text-xs truncate">
-                <span className="font-semibold text-primary">{t("requester")}:</span> <span className="text-foreground">{pr.requester}</span>
-              </div>
-              <div className="mt-0.5 text-xs">
-                <span className="font-semibold text-primary">{t("submitted")}:</span> <span className="text-subtext">{new Date(pr.submittedDate).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}</span>
-              </div>
-              <div className="mt-1 text-xs font-semibold text-primary">
-                {formatCurrency(pr.totalEstimatedCost, lang)}
-              </div>
-            </div>
-            <span
-              className={clsx(
-                "shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ring-1 shadow-md flex items-center gap-1",
-                statusBadgeColor(pr.status)
-              )}
-            >
-              <span>{getStatusIcon(pr.status)}</span>
-              <span>{pr.status}</span>
-            </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold text-foreground">{pr.title}</div>
+          <div className="mt-1 text-xs truncate">
+            <span className="font-semibold text-primary">{t("requester")}:</span> <span className="text-foreground">{pr.requester}</span>
           </div>
-        </button>
+          <div className="mt-0.5 text-xs">
+            <span className="font-semibold text-primary">{t("submitted")}:</span> <span className="text-subtext">{new Date(pr.submittedDate).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US")}</span>
+          </div>
+        </div>
+        <span
+          className={clsx(
+            "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ring-1 shadow-sm",
+            statusBadgeColor(pr.status)
+          )}
+        >
+          {pr.status}
+        </span>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -2564,7 +2604,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [view, setView] = useState<"detail" | "creating" | "creatingProject">("detail");
-  const [section, setSection] = useState<"requests" | "inventory" | "admin">("requests");
+  const [section, setSection] = useState<"requests" | "inventory">("requests");
   const [search, setSearch] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   // Filters
@@ -2576,25 +2616,6 @@ const App: React.FC = () => {
   const [filterMinCost, setFilterMinCost] = useState<string>("");
   const [filterMaxCost, setFilterMaxCost] = useState<string>("");
   const [filterAssignedToMe, setFilterAssignedToMe] = useState<boolean>(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [adminUsers, setAdminUsers] = useState<Array<any>>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [sidebarSearch, setSidebarSearch] = useState("");
-  const [quickFilter, setQuickFilter] = useState<"all" | "my" | "pending" | "thisWeek">("all");
-  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Array<{
-    id: string | number;
-    title: string;
-    message: string;
-    type: 'success' | 'info' | 'warning' | 'error';
-    read: boolean;
-    created_at: string;
-    related_request_id?: string | number;
-  }>>([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
-  const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.read).length : 0;
 
   const t = (key: string) => i18n[language][key] ?? key;
 
@@ -2707,46 +2728,6 @@ const App: React.FC = () => {
     window.addEventListener('app:request-deleted', onDeleted as any);
     return () => window.removeEventListener('app:request-deleted', onDeleted as any);
   }, [t]);
-
-  // Load users when admin section is active
-  useEffect(() => {
-    if (section === 'admin' && currentUser?.apiRole === 'ADMIN') {
-      (async () => {
-        try {
-          setLoadingUsers(true);
-          const res = await adminApi.getUsers({ per_page: 100 });
-          if (res.data) setAdminUsers(res.data);
-        } catch (e) {
-          console.error('Failed to load users', e);
-          addToast('error', 'Failed to load users');
-        } finally {
-          setLoadingUsers(false);
-        }
-      })();
-    }
-  }, [section, currentUser]);
-
-  // Load notifications when user logs in
-  useEffect(() => {
-    if (!currentUser) return;
-    loadNotifications();
-  }, [currentUser]);
-
-  // Auto-refresh notifications every 30 seconds
-  useEffect(() => {
-    if (!currentUser) return;
-    const interval = setInterval(() => {
-      loadNotifications();
-    }, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }, [currentUser]);
-
-  // Refresh notifications when panel opens
-  useEffect(() => {
-    if (showNotifications && currentUser) {
-      loadNotifications();
-    }
-  }, [showNotifications, currentUser]);
 
   // Handlers
   function handleToggleLanguage() {
@@ -2905,7 +2886,6 @@ const App: React.FC = () => {
         setSelectedRequest(created);
         addToast("success", t("createSuccess"));
       }
-      setSection("requests");
       setView("detail");
     } catch (e) {
       console.error("Create request failed", e);
@@ -2973,7 +2953,6 @@ const App: React.FC = () => {
         setSelectedRequest(created);
         addToast("success", t("createSuccess"));
       }
-      setSection("requests");
       setView("detail");
     } catch (e) {
       console.error("Create project failed", e);
@@ -2982,168 +2961,9 @@ const App: React.FC = () => {
     }
   }
 
-  async function handleToggleUserStatus(userId: string) {
-    try {
-      await adminApi.toggleUserStatus(userId);
-      const res = await adminApi.getUsers({ per_page: 100 });
-      if (res.data) setAdminUsers(res.data);
-      addToast('success', 'User status updated');
-    } catch (e) {
-      console.error('Toggle user status failed', e);
-      addToast('error', 'Failed to update user status');
-    }
-  }
-
-  async function handleDeleteUser(userId: string) {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    try {
-      await adminApi.deleteUser(userId);
-      const res = await adminApi.getUsers({ per_page: 100 });
-      if (res.data) setAdminUsers(res.data);
-      addToast('success', 'User deleted');
-    } catch (e) {
-      console.error('Delete user failed', e);
-      addToast('error', 'Failed to delete user');
-    }
-  }
-
-  async function handleRefreshUsers() {
-    try {
-      setLoadingUsers(true);
-      const res = await adminApi.getUsers({ per_page: 100 });
-      if (res.data) setAdminUsers(res.data);
-      addToast('success', 'Users refreshed');
-    } catch (e) {
-      console.error('Failed to refresh users', e);
-      addToast('error', 'Failed to refresh users');
-    } finally {
-      setLoadingUsers(false);
-    }
-  }
-
-  // Notification functions
-  async function loadNotifications() {
-    try {
-      setLoadingNotifications(true);
-      const res = await notificationsApi.getNotifications({ per_page: 50 });
-      if (res.data && Array.isArray(res.data)) {
-        setNotifications(res.data);
-      } else {
-        setNotifications([]);
-      }
-    } catch (e) {
-      console.error('Failed to load notifications', e);
-      setNotifications([]); // Set empty array on error
-    } finally {
-      setLoadingNotifications(false);
-    }
-  }
-
-  async function handleMarkNotificationAsRead(id: string | number) {
-    try {
-      await notificationsApi.markAsRead(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    } catch (e) {
-      console.error('Failed to mark notification as read', e);
-    }
-  }
-
-  async function handleMarkAllNotificationsAsRead() {
-    try {
-      await notificationsApi.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      addToast("success", "All notifications marked as read");
-      setShowNotifications(false);
-    } catch (e) {
-      console.error('Failed to mark all as read', e);
-      addToast("error", "Failed to mark notifications as read");
-    }
-  }
-
-  async function handleDeleteNotification(id: string | number) {
-    try {
-      await notificationsApi.deleteNotification(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      addToast("success", "Notification deleted");
-    } catch (e) {
-      console.error('Failed to delete notification', e);
-      addToast("error", "Failed to delete notification");
-    }
-  }
-
-  // Helper functions for new features
-  function handleBulkApprove() {
-    selectedRequestIds.forEach(id => handleApproveRequest(id));
-    setSelectedRequestIds(new Set());
-    addToast("success", `Approved ${selectedRequestIds.size} requests`);
-  }
-
-  function handleBulkReject() {
-    const reason = prompt("Enter rejection reason for all selected requests:");
-    if (!reason) return;
-    selectedRequestIds.forEach(id => handleRejectRequest(id, reason));
-    setSelectedRequestIds(new Set());
-    addToast("success", `Rejected ${selectedRequestIds.size} requests`);
-  }
-
-  function handleExportToCSV() {
-    const csvContent = [
-      ["ID", "Title", "Requester", "Status", "Date", "Total Cost"],
-      ...filtered.map(r => [
-        r.id,
-        r.title,
-        r.requester,
-        r.status,
-        r.submittedDate,
-        r.totalEstimatedCost
-      ])
-    ].map(row => row.join(",")).join("\\n");
-    
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `requests-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addToast("success", "Exported to CSV");
-  }
-
-  function toggleRequestSelection(id: string) {
-    setSelectedRequestIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
-  }
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const sq = sidebarSearch.trim().toLowerCase();
     let list = requests;
-    
-    // Apply sidebar search
-    if (sq) {
-      list = list.filter(
-        (p) =>
-          p.title.toLowerCase().includes(sq) ||
-          p.requester.toLowerCase().includes(sq) ||
-          p.status.toLowerCase().includes(sq)
-      );
-    }
-    
-    // Apply quick filters
-    if (quickFilter === "my" && currentUser) {
-      list = list.filter(p => p.requesterId === currentUser.id || p.requester === currentUser.name);
-    } else if (quickFilter === "pending") {
-      list = list.filter(p => p.status === "Pending");
-    } else if (quickFilter === "thisWeek") {
-      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      list = list.filter(p => new Date(p.submittedDate).getTime() >= weekAgo);
-    }
-    
-    // Apply main search
     if (q) {
       list = list.filter(
         (p) =>
@@ -3180,7 +3000,7 @@ const App: React.FC = () => {
       list = list.filter((p) => (p.directManagerId !== undefined && String(p.directManagerId) === myId));
     }
     return list;
-  }, [search, sidebarSearch, quickFilter, requests, filterStatuses, filterRequester, filterDateFrom, filterDateTo, filterMinCost, filterMaxCost, filterAssignedToMe, currentUser]);
+  }, [search, requests, filterStatuses, filterRequester, filterDateFrom, filterDateTo, filterMinCost, filterMaxCost, filterAssignedToMe, currentUser]);
 
   // If current selection is excluded by filters, clear it or pick first filtered item
   useEffect(() => {
@@ -3192,21 +3012,6 @@ const App: React.FC = () => {
     }
   }, [filtered, selectedRequest, view]);
 
-  // Computed stats for dashboard
-  const stats = useMemo(() => {
-    const total = requests.length;
-    const pending = requests.filter(r => r.status === "Pending").length;
-    const approved = requests.filter(r => r.status === "Approved").length;
-    const rejected = requests.filter(r => r.status === "Rejected").length;
-    const thisWeek = requests.filter(r => {
-      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      return new Date(r.submittedDate).getTime() >= weekAgo;
-    }).length;
-    const totalCost = requests.reduce((sum, r) => sum + r.totalEstimatedCost, 0);
-    const avgCost = total > 0 ? totalCost / total : 0;
-    return { total, pending, approved, rejected, thisWeek, totalCost, avgCost };
-  }, [requests]);
-
   if (!currentUser) {
     return (
       <>
@@ -3217,892 +3022,103 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Notification Panel Overlay */}
-      {showNotifications && (
-        <div 
-          className="fixed inset-0 bg-background/90 z-[9998]"
-          onClick={() => setShowNotifications(false)}
+  <div className="min-h-screen bg-background text-foreground">
+      <div className="sticky top-0 z-40 backdrop-blur-sm bg-card/80 border-b border-border shadow-sm">
+        <Navbar
+          t={t}
+          language={language}
+          onToggleLanguage={handleToggleLanguage}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
-      )}
+      </div>
 
-      {/* Notification Panel */}
-      {showNotifications && (
-        <div className="fixed top-0 right-0 h-full bg-card shadow-2xl transition-all duration-300 z-[9999] w-80 overflow-hidden border-l border-border animate-in slide-in-from-right">
-          <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="border-b border-border bg-gradient-to-r from-primary/10 to-warning/10 p-4">
-            <div className={clsx(
-              "flex items-center justify-between",
-              language === "ar" && "flex-row-reverse"
-            )}>
-              <div className={clsx(
-                "flex items-center gap-2",
-                language === "ar" && "flex-row-reverse"
-              )}>
-                <Bell className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-lg">{language === "ar" ? "الإشعارات" : "Notifications"}</h3>
-                {unreadCount > 0 && (
-                  <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="rounded-lg p-2 hover:bg-secondary transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {loadingNotifications ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="rounded-lg border border-border bg-secondary/20 p-3 animate-pulse">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-secondary"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-secondary rounded w-3/4"></div>
-                        <div className="h-3 bg-secondary rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : !Array.isArray(notifications) || notifications.length === 0 ? (
-              <div className="text-center py-12">
-                <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
-                <p className="text-sm text-subtext">{language === "ar" ? "لا توجد إشعارات" : "No notifications"}</p>
-                <p className="text-xs text-muted-foreground mt-2">{language === "ar" ? "أنت على اطلاع بكل شيء!" : "You're all caught up!"}</p>
-              </div>
-            ) : (
-              notifications.map((notif) => {
-                const timeAgo = new Date(notif.created_at).toLocaleString(language === "ar" ? "ar-EG" : "en-US", {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                });
-                
-                return (
-                  <div
-                    key={notif.id}
-                    className={clsx(
-                      "rounded-lg border p-3 transition-all duration-200 hover:shadow-md cursor-pointer group relative",
-                      notif.read ? "bg-card border-border opacity-75" : "bg-primary/5 border-primary/20 shadow-sm"
-                    )}
-                    onClick={() => {
-                      if (!notif.read) {
-                        handleMarkNotificationAsRead(notif.id);
-                      }
-                      if (notif.related_request_id) {
-                        const relatedRequest = requests.find(r => r.id === String(notif.related_request_id));
-                        if (relatedRequest) {
-                          setSelectedRequest(relatedRequest);
-                          setView("detail");
-                          setSection("requests");
-                        }
-                      }
-                      setShowNotifications(false);
-                    }}
-                  >
-                    <div className={clsx(
-                      "flex items-start gap-3",
-                      language === "ar" && "flex-row-reverse"
-                    )}>
-                      <div className={clsx(
-                        "h-10 w-10 rounded-full grid place-items-center shrink-0",
-                        notif.type === 'success' ? "bg-green-500/20 text-green-500" :
-                        notif.type === 'warning' ? "bg-warning/20 text-warning" :
-                        notif.type === 'error' ? "bg-red-500/20 text-red-500" :
-                        "bg-blue-500/20 text-blue-500"
-                      )}>
-                        {notif.type === 'success' ? <CheckSquare className="h-5 w-5" /> :
-                         notif.type === 'warning' ? <Clock className="h-5 w-5" /> :
-                         notif.type === 'error' ? <X className="h-5 w-5" /> :
-                         <Bell className="h-5 w-5" />}
-                      </div>
-                      <div className={clsx(
-                        "flex-1 min-w-0",
-                        language === "ar" && "text-right"
-                      )}>
-                        <div className={clsx(
-                          "flex items-start justify-between gap-2",
-                          language === "ar" && "flex-row-reverse"
-                        )}>
-                          <h4 className="text-sm font-semibold text-foreground">{notif.title}</h4>
-                          {!notif.read && (
-                            <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5 animate-pulse"></div>
-                          )}
-                        </div>
-                        <p className="text-xs text-subtext mt-1 line-clamp-2">{notif.message}</p>
-                        <p className="text-xs text-muted-foreground mt-2">{timeAgo}</p>
-                      </div>
-                      {/* Delete button - shows on hover */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteNotification(notif.id);
-                        }}
-                        className={clsx(
-                          "absolute top-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-1 hover:bg-destructive/10 text-destructive",
-                          language === "ar" ? "left-2" : "right-2"
-                        )}
-                        title="Delete"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t border-border p-3 space-y-2">
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllNotificationsAsRead}
-                disabled={loadingNotifications}
-                className="w-full rounded-lg bg-primary/10 text-primary px-4 py-2 text-sm font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50"
-              >
-                {language === "ar" ? "تعيين الكل كمقروء" : "Mark all as read"}
-              </button>
-            )}
+      {/* Tab Navigation */}
+      <div className="border-b border-border bg-card/80 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex gap-6">
             <button
-              onClick={() => {
-                loadNotifications();
-                addToast("success", language === "ar" ? "تم تحديث الإشعارات" : "Notifications refreshed");
-              }}
-              disabled={loadingNotifications}
-              className="w-full rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <svg className={clsx("h-4 w-4", loadingNotifications && "animate-spin")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {language === "ar" ? "تحديث" : "Refresh"}
-            </button>
-          </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={clsx(
-          "fixed top-0 h-full bg-card shadow-xl transition-all duration-300 z-[60] flex flex-col",
-          language === "ar" ? "left-0 border-r border-border" : "left-0 border-r border-border",
-          sidebarOpen ? "w-64" : "w-16"
-        )}
-        style={language === "ar" ? { left: 'auto', right: 0 } : {}}
-      >
-        {/* Sidebar Header */}
-        <div className={clsx(
-          "flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-warning/10 to-primary/10",
-          language === "ar" && "flex-row-reverse"
-        )}>
-          {sidebarOpen && (
-            <div className={clsx("flex items-center gap-2", language === "ar" && "flex-row-reverse")}>
-              <div className="h-8 w-8 rounded-lg bg-warning text-warning-foreground grid place-items-center font-extrabold shadow-sm">A</div>
-              <span className="text-lg font-bold tracking-tight">{t("appTitle")}</span>
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-lg p-2 hover:bg-secondary transition-colors"
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {/* Sidebar Actions */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {/* Search Bar */}
-          {sidebarOpen && (
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={sidebarSearch}
-                onChange={(e) => setSidebarSearch(e.target.value)}
-                placeholder={t("search")}
-                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-warning"
-              />
-            </div>
-          )}
-
-          {/* Dashboard Button */}
-          <button
-            onClick={() => setShowDashboard(!showDashboard)}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              showDashboard ? "bg-primary/20 text-primary shadow-md" : "hover:bg-primary/10 text-foreground"
-            )}
-            title={language === "ar" ? "لوحة القيادة" : "Dashboard"}
-          >
-            <Home className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{language === "ar" ? "لوحة القيادة" : "Dashboard"}</span>}
-          </button>
-
-          {/* Notifications */}
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 relative",
-              language === "ar" && "flex-row-reverse",
-              showNotifications ? "bg-primary/20 text-primary" : "hover:bg-secondary text-foreground"
-            )}
-            title={language === "ar" ? "الإشعارات" : "Notifications"}
-          >
-            <Bell className={clsx("h-5 w-5 shrink-0", showNotifications && "animate-bounce")} />
-            {sidebarOpen && <span>{language === "ar" ? "الإشعارات" : "Notifications"}</span>}
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full text-xs grid place-items-center font-bold animate-pulse">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Quick Filters */}
-          {sidebarOpen && section === "requests" && (
-            <>
-              <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === "ar" ? "فلاتر سريعة" : "Quick Filters"}</div>
-              <div className="space-y-1">
-                <button
-                  onClick={() => setQuickFilter("all")}
-                  className={clsx(
-                    "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all",
-                    language === "ar" && "flex-row-reverse",
-                    quickFilter === "all" ? "bg-warning/20 text-warning font-semibold" : "hover:bg-secondary"
-                  )}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>{language === "ar" ? `جميع الطلبات (${requests.length})` : `All Requests (${requests.length})`}</span>
-                </button>
-                <button
-                  onClick={() => setQuickFilter("my")}
-                  className={clsx(
-                    "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all",
-                    language === "ar" && "flex-row-reverse",
-                    quickFilter === "my" ? "bg-warning/20 text-warning font-semibold" : "hover:bg-secondary"
-                  )}
-                >
-                  <Users className="h-4 w-4" />
-                  <span>{language === "ar" ? "طلباتي" : "My Requests"}</span>
-                </button>
-                <button
-                  onClick={() => setQuickFilter("pending")}
-                  className={clsx(
-                    "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all",
-                    language === "ar" && "flex-row-reverse",
-                    quickFilter === "pending" ? "bg-warning/20 text-warning font-semibold" : "hover:bg-secondary"
-                  )}
-                >
-                  <Clock className="h-4 w-4" />
-                  <span>{language === "ar" ? `قيد الانتظار (${stats.pending})` : `Pending (${stats.pending})`}</span>
-                </button>
-                <button
-                  onClick={() => setQuickFilter("thisWeek")}
-                  className={clsx(
-                    "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all",
-                    language === "ar" && "flex-row-reverse",
-                    quickFilter === "thisWeek" ? "bg-warning/20 text-warning font-semibold" : "hover:bg-secondary"
-                  )}
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span>{language === "ar" ? `هذا الأسبوع (${stats.thisWeek})` : `This Week (${stats.thisWeek})`}</span>
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Quick Actions */}
-          {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === "ar" ? "إجراءات سريعة" : "Quick Actions"}</div>}
-          
-          <button
-            onClick={() => {
-              setView("creating");
-              setSelectedRequest(null);
-              setSection("requests");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              view === "creating" ? "bg-warning text-warning-foreground shadow-md" : "hover:bg-warning/10 text-foreground"
-            )}
-            title={t("createNew")}
-          >
-            <Plus className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("createNew")}</span>}
-          </button>
-
-          <button
-            onClick={() => {
-              setView("creatingProject");
-              setSelectedRequest(null);
-              setSection("requests");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              view === "creatingProject" ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10 text-foreground"
-            )}
-            title={t("submitProject")}
-          >
-            <FolderPlus className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("submitProject")}</span>}
-          </button>
-
-          {/* Sections */}
-          {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === 'ar' ? 'الأقسام' : 'Sections'}</div>}
-          
-          <button
-            onClick={() => {
-              setSection("requests");
-              setView("detail");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              section === "requests" 
-                ? clsx(
-                    "bg-warning/20 text-warning",
-                    language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
-                  )
-                : "hover:bg-secondary text-foreground"
-            )}
-            title={t("requests")}
-          >
-            <FileText className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("requests")}</span>}
-            {sidebarOpen && section === "requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-          </button>
-
-          {(currentUser.apiRole === "DIRECT_MANAGER" || currentUser.apiRole === "FINAL_MANAGER" || currentUser.apiRole === "ADMIN") && (
-            <button
-              onClick={() => {
-                setSection("inventory");
-                setView("detail");
-              }}
+              onClick={() => setSection("requests")}
               className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                language === "ar" && "flex-row-reverse",
-                section === "inventory" 
-                  ? clsx(
-                      "bg-warning/20 text-warning",
-                      language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
-                    )
-                  : "hover:bg-secondary text-foreground"
+                "border-b-2 px-4 py-3 text-sm font-semibold transition-all duration-200 relative",
+                section === "requests"
+                  ? "border-warning text-warning"
+                  : "border-transparent text-subtext hover:text-foreground hover:border-border"
               )}
-              title={t("inventory")}
             >
-              <Settings className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{t("inventory")}</span>}
-              {sidebarOpen && section === "inventory" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+              {t("requests")}
+              {section === "requests" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-warning via-warning/90 to-warning/40 animate-in fade-in slide-in-from-bottom-2"></span>
+              )}
             </button>
-          )}
-
-          {/* Filters Toggle */}
-          {section === "requests" && (
-            <>
-              {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === 'ar' ? 'خيارات العرض' : 'View Options'}</div>}
+            {(currentUser.apiRole === "DIRECT_MANAGER" || currentUser.apiRole === "FINAL_MANAGER" || currentUser.apiRole === "ADMIN") && (
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => setSection("inventory")}
                 className={clsx(
-                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                  language === "ar" && "flex-row-reverse",
-                  showFilters ? "bg-primary/20 text-primary" : "hover:bg-secondary text-foreground"
+                  "border-b-2 px-4 py-3 text-sm font-semibold transition-all duration-200 relative",
+                  section === "inventory"
+                    ? "border-warning text-warning"
+                    : "border-transparent text-subtext hover:text-foreground hover:border-border"
                 )}
-                title={t("filters")}
               >
-                <Filter className="h-5 w-5 shrink-0" />
-                {sidebarOpen && <span>{t("filters")}</span>}
-              </button>
-            </>
-          )}
-
-          {/* Admin Section */}
-          {currentUser.apiRole === 'ADMIN' && (
-            <>
-              {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === 'ar' ? 'المسؤول' : 'Admin'}</div>}
-              <button
-                onClick={() => {
-                  setSection("admin");
-                  setView("detail");
-                }}
-                className={clsx(
-                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                  language === "ar" && "flex-row-reverse",
-                  section === "admin" 
-                    ? clsx(
-                        "bg-warning/20 text-warning",
-                        language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
-                      )
-                    : "hover:bg-secondary text-foreground"
+                {t("inventory")}
+                {section === "inventory" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-warning via-warning/90 to-warning/40 animate-in fade-in slide-in-from-bottom-2"></span>
                 )}
-                title={t("adminPanel")}
-              >
-                <Settings className="h-5 w-5 shrink-0" />
-                {sidebarOpen && <span>{t("adminPanel")}</span>}
-                {sidebarOpen && section === "admin" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
               </button>
-            </>
-          )}
-        </div>
-
-        {/* Sidebar Footer */}
-        <div className="border-t border-border p-3">
-          {sidebarOpen ? (
-            <div className="space-y-2">
-              <div className={clsx("flex items-center gap-2 text-xs text-subtext", language === "ar" && "flex-row-reverse")}>
-                <div className="h-8 w-8 rounded-full bg-warning/20 text-warning grid place-items-center font-bold text-sm">
-                  {currentUser.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div className={clsx("flex-1 min-w-0", language === "ar" && "text-right")}>
-                  <div className="font-semibold truncate">{currentUser.name}</div>
-                  <div className="text-xs text-subtext">{t(currentUser.role)}</div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleToggleLanguage}
-                  className="flex-1 rounded-lg border border-border px-2 py-1.5 text-xs font-semibold hover:bg-secondary transition-all duration-200"
-                >
-                  {language === "en" ? "العربية" : "English"}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 rounded-lg bg-red-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-all duration-200"
-                >
-                  {t("logout")}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={handleToggleLanguage}
-                className="rounded-lg p-2 hover:bg-secondary transition-colors"
-                title={t("language")}
-              >
-                <Settings className="h-5 w-5" />
-              </button>
-              <button
-                onClick={handleLogout}
-                className="rounded-lg p-2 bg-red-600 text-white hover:bg-red-700 transition-colors"
-                title={t("logout")}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          )}
+            )}
+          </nav>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div 
-        className="flex-1 transition-all duration-300 min-h-screen"
-        style={language === "ar" 
-          ? (sidebarOpen ? { marginRight: '16rem' } : { marginRight: '4rem' })
-          : (sidebarOpen ? { marginLeft: '16rem' } : { marginLeft: '4rem' })
-        }
+      <main
+        className={clsx(
+          "mx-auto max-w-7xl pb-10 pt-4",
+          // Base paddings
+          "px-4 sm:px-6 lg:px-8",
+          // No extra padding needed; comments are now in-grid
+          undefined
+        )}
       >
-        {/* Top Navbar - Simplified */}
-        <div className="sticky top-0 z-40 backdrop-blur-sm bg-card/80 border-b border-border shadow-sm">
-          <div className="px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold">
-                {section === "inventory" ? t("inventoryManagement") : section === "admin" ? t("adminPanel") : t("requests")}
-              </h1>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-subtext hidden sm:inline">
-                  {currentUser.name} • {t(currentUser.role)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <main className="px-4 sm:px-6 lg:px-8 pb-10 pt-4">
-          {/* Dashboard View */}
-          {showDashboard && section === "requests" && (
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 text-primary grid place-items-center">
-                    <FileText className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{stats.total}</div>
-                    <div className="text-sm text-subtext">{language === 'ar' ? 'إجمالي الطلبات' : 'Total Requests'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-warning/10 text-warning grid place-items-center">
-                    <Clock className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{stats.pending}</div>
-                    <div className="text-sm text-subtext">{language === 'ar' ? 'قيد الانتظار' : 'Pending'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
-                    <CheckSquare className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{stats.approved}</div>
-                    <div className="text-sm text-subtext">{language === 'ar' ? 'موافق عليها' : 'Approved'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-blue-500/10 text-blue-500 grid place-items-center">
-                    <TrendingUp className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{formatCurrency(stats.totalCost, language)}</div>
-                    <div className="text-sm text-subtext">{language === 'ar' ? 'التكلفة الإجمالية' : 'Total Cost'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow col-span-full md:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">{language === 'ar' ? 'النشاط الأخير' : 'Recent Activity'}</h3>
-                  <Activity className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                  {requests.slice(0, 5).map(r => (
-                    <div key={r.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                      <span className="truncate flex-1">{r.title}</span>
-                      <span className={clsx(
-                        "px-2 py-1 rounded text-xs font-semibold",
-                        r.status === "Approved" ? "bg-green-500/20 text-green-500" :
-                        r.status === "Pending" ? "bg-warning/20 text-warning" :
-                        r.status === "Rejected" ? "bg-red-500/20 text-red-500" :
-                        "bg-blue-500/20 text-blue-500"
-                      )}>
-                        {r.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow col-span-full md:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">{language === 'ar' ? 'التحليلات' : 'Analytics'}</h3>
-                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{language === 'ar' ? 'معدل الموافقة' : 'Approval Rate'}</span>
-                      <span className="font-semibold">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%</span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 transition-all duration-500"
-                        style={{ width: `${stats.total > 0 ? (stats.approved / stats.total) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{language === 'ar' ? 'معدل الرفض' : 'Rejection Rate'}</span>
-                      <span className="font-semibold">{stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%</span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-red-500 transition-all duration-500"
-                        style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="pt-2 border-t border-border">
-                    <div className="text-sm">{language === 'ar' ? 'متوسط التكلفة:' : 'Average Cost:'} <span className="font-semibold">{formatCurrency(stats.avgCost, language)}</span></div>
-                    <div className="text-sm">{language === 'ar' ? 'هذا الأسبوع:' : 'This Week:'} <span className="font-semibold">{stats.thisWeek} {language === 'ar' ? 'طلبات' : 'requests'}</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bulk Actions Bar */}
-          {section === "requests" && selectedRequestIds.size > 0 && (
-            <div className="mb-4 bg-warning/10 border border-warning rounded-lg p-3 flex items-center justify-between">
-              <span className="font-semibold">{selectedRequestIds.size} {language === 'ar' ? 'طلبات محددة' : 'requests selected'}</span>
-              <div className="flex gap-2">
-                {currentUser.role === "manager" && (
-                  <>
-                    <button
-                      onClick={handleBulkApprove}
-                      className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
-                    >
-                      {language === 'ar' ? 'الموافقة على الكل' : 'Approve All'}
-                    </button>
-                    <button
-                      onClick={handleBulkReject}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
-                    >
-                      {language === 'ar' ? 'رفض الكل' : 'Reject All'}
-                    </button>
-                  </>
-                )}
+        {section === "inventory" ? (
+          <InventoryManagement language={language} currentUser={currentUser} t={t} />
+        ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+          {/* Column 1: Request List */}
+          <section className="md:col-span-3">
+            <div className="rounded-xl border border-border bg-card shadow-md hover:shadow-lg transition-shadow duration-200">
+              <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
+                 <button
+                   onClick={() => {
+                     setView("creating");
+                     setSelectedRequest(null);
+                   }}
+                   className="rounded-lg bg-warning px-3 py-1.5 text-sm font-semibold text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md hover:scale-105"
+                 >
+                   {t("createNew")}
+                 </button>
+                 <button
+                   onClick={() => {
+                     setView("creatingProject");
+                     setSelectedRequest(null);
+                   }}
+                   className="rounded-lg border-2 border-primary/50 px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary/10 hover:border-primary transition-all duration-200"
+                 >
+                   {t("submitProject")}
+                 </button>
+                 <input
+                   value={search}
+                   onChange={(e) => setSearch(e.target.value)}
+                   placeholder={t("search")}
+                   className="ms-auto w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                 />
                 <button
-                  onClick={handleExportToCSV}
-                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+                  onClick={() => setShowFilters((s) => !s)}
+                  className="rounded-lg border-2 border-border px-3 py-1.5 text-sm font-semibold hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-200"
                 >
-                  <Download className="h-4 w-4" />
-                  {language === 'ar' ? 'تصدير' : 'Export'}
+                  {t("filters")}
                 </button>
-                <button
-                  onClick={() => setSelectedRequestIds(new Set())}
-                  className="px-3 py-1.5 bg-secondary text-foreground rounded-lg text-sm font-semibold hover:bg-secondary/80 transition-colors"
-                >
-                  {language === 'ar' ? 'مسح' : 'Clear'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {section === "inventory" ? (
-            <InventoryManagement language={language} currentUser={currentUser} t={t} />
-          ) : section === "admin" ? (
-            <div className="max-w-6xl mx-auto space-y-6">
-              {/* Admin Dashboard Header */}
-              <div className="rounded-xl border border-border bg-gradient-to-r from-warning/10 via-primary/10 to-warning/10 p-6 shadow-lg">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-xl bg-warning text-warning-foreground grid place-items-center shadow-md">
-                    <Settings className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">{t('adminPanel')}</h2>
-                    <p className="text-sm text-subtext mt-1">{language === 'ar' ? 'إدارة المستخدمين وإعدادات النظام' : 'Manage users and system settings'}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Create User Card */}
-                <div className="rounded-xl border border-border bg-card shadow-md">
-                  <div className="border-b border-border bg-gradient-to-r from-primary/5 to-warning/5 px-6 py-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <Plus className="h-5 w-5 text-primary" />
-                      {t('createUser')}
-                    </h3>
-                    <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'إضافة مستخدمين جدد إلى النظام بأدوار محددة' : 'Add new users to the system with specific roles'}</p>
-                  </div>
-                  <div className="p-6">
-                    <AdminCreateUserForm 
-                      t={t} 
-                      onCreated={(u) => {
-                        addToast('success', t('userCreated'));
-                        handleRefreshUsers();
-                      }} 
-                    />
-                  </div>
-                </div>
-
-                {/* System Stats & Analytics */}
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-subtext uppercase tracking-wide">{language === 'ar' ? 'إجمالي الطلبات' : 'Total Requests'}</div>
-                        <div className="text-2xl font-bold text-primary mt-1">{requests.length}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-warning/10 text-warning grid place-items-center">
-                        <Clock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-subtext uppercase tracking-wide">{language === 'ar' ? 'قيد الانتظار' : 'Pending'}</div>
-                        <div className="text-2xl font-bold text-warning mt-1">{requests.filter(r => r.status === 'Pending').length}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
-                        <CheckSquare className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-subtext uppercase tracking-wide">{language === 'ar' ? 'موافق عليها' : 'Approved'}</div>
-                        <div className="text-2xl font-bold text-green-500 mt-1">{requests.filter(r => r.status === 'Approved' || r.status === 'Active').length}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-blue-500/10 text-blue-500 grid place-items-center">
-                        <Users className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-subtext uppercase tracking-wide">{language === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</div>
-                        <div className="text-2xl font-bold text-blue-500 mt-1">{adminUsers.length}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
-                    <div className="text-xs font-semibold text-subtext uppercase tracking-wide mb-3">{language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</div>
-                    <button
-                      onClick={handleExportToCSV}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
-                    >
-                      <Download className="h-4 w-4" />
-                      {language === 'ar' ? 'تصدير جميع الطلبات' : 'Export All Requests'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Users List */}
-              <div className="rounded-xl border border-border bg-card shadow-md">
-                <div className="border-b border-border bg-gradient-to-r from-primary/5 to-warning/5 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <Users className="h-5 w-5 text-primary" />
-                        {language === 'ar' ? 'المستخدمون الحاليون' : 'Current Users'}
-                      </h3>
-                      <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'إدارة حسابات المستخدمين والأدوار' : 'Manage user accounts and roles'}</p>
-                    </div>
-                    <button
-                      onClick={handleRefreshUsers}
-                      disabled={loadingUsers}
-                      className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary transition-all duration-200 disabled:opacity-50"
-                    >
-                      <svg className={clsx("h-4 w-4", loadingUsers && "animate-spin")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      {language === 'ar' ? 'تحديث' : 'Refresh'}
-                    </button>
-                  </div>
-                </div>
-                <div className="p-6">
-                  {loadingUsers ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((n) => (
-                        <div key={n} className="rounded-lg border border-border bg-secondary/20 p-4 animate-pulse">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full bg-secondary"></div>
-                            <div className="flex-1 space-y-2">
-                              <div className="h-4 bg-secondary rounded w-1/3"></div>
-                              <div className="h-3 bg-secondary rounded w-1/4"></div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : adminUsers.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                        <Users className="h-8 w-8 text-primary" />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">{language === 'ar' ? 'لم يتم العثور على مستخدمين' : 'No users found'}</p>
-                      <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'قم بإنشاء أول مستخدم أعلاه' : 'Create your first user above'}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {adminUsers.map((user) => {
-                        const userName = user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
-                        const userRole = user.role || 'USER';
-                        const isActive = user.status === 'active' || user.is_active;
-                        const roleColors: Record<string, string> = {
-                          ADMIN: 'bg-red-100 text-red-800 border-red-200',
-                          FINAL_MANAGER: 'bg-purple-100 text-purple-800 border-purple-200',
-                          DIRECT_MANAGER: 'bg-blue-100 text-blue-800 border-blue-200',
-                          ACCOUNTANT: 'bg-green-100 text-green-800 border-green-200',
-                          USER: 'bg-gray-100 text-gray-800 border-gray-200',
-                        };
-                        return (
-                          <div key={user.id} className="rounded-lg border border-border bg-background p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 rounded-full bg-warning/20 text-warning grid place-items-center font-bold text-sm shrink-0">
-                                {userName.slice(0, 2).toUpperCase()}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="font-semibold text-sm truncate">{userName}</h4>
-                                  <span className={clsx(
-                                    "rounded-full px-2 py-0.5 text-xs font-bold border",
-                                    roleColors[userRole] || roleColors.USER
-                                  )}>
-                                    {userRole.replace('_', ' ')}
-                                  </span>
-                                  {!isActive && (
-                                    <span className="rounded-full px-2 py-0.5 text-xs font-bold bg-red-100 text-red-800 border border-red-200">
-                                      {language === 'ar' ? 'غير نشط' : 'Inactive'}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-subtext mt-1">{user.email}</p>
-                                {user.position && (
-                                  <p className="text-xs text-subtext">{user.position}</p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleToggleUserStatus(String(user.id))}
-                                  className={clsx(
-                                    "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200",
-                                    isActive
-                                      ? "bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200"
-                                      : "bg-green-100 text-green-800 border border-green-200 hover:bg-green-200"
-                                  )}
-                                  title={isActive ? (language === 'ar' ? 'تعطيل' : 'Deactivate') : (language === 'ar' ? 'تفعيل' : 'Activate')}
-                                >
-                                  {isActive ? (language === 'ar' ? 'تعطيل' : 'Deactivate') : (language === 'ar' ? 'تفعيل' : 'Activate')}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(String(user.id))}
-                                  className="rounded-lg px-3 py-1.5 text-xs font-semibold bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 transition-all duration-200"
-                                  title={language === 'ar' ? 'حذف المستخدم' : 'Delete user'}
-                                >
-                                  {language === 'ar' ? 'حذف' : 'Delete'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-              {/* Column 1: Request List - Hide when creating */}
-              {view === "detail" && (
-                <section className="md:col-span-3">
-                  <div className="rounded-xl border border-border bg-card shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder={t("search")}
-                        className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
-                      />
-                    </div>
+               </div>
               {showFilters && (
                 <div className="border-b border-border p-3">
                   <div className="grid grid-cols-1 gap-3">
@@ -4244,8 +3260,6 @@ const App: React.FC = () => {
                       }}
                       t={t}
                       lang={language}
-                      isChecked={selectedRequestIds.has(pr.id)}
-                      onToggleCheck={toggleRequestSelection}
                     />
                   ))
                 )}
@@ -4259,12 +3273,9 @@ const App: React.FC = () => {
               )}
             </div>
           </section>
-              )}
 
           {/* Column 2: Detail or Create */}
-          <section className={clsx(
-            view === "creating" || view === "creatingProject" ? "md:col-span-12" : "md:col-span-6"
-          )}>
+          <section className="md:col-span-6">
             {view === "creating" ? (
               <RequestCreateForm
                 t={t}
@@ -4301,23 +3312,19 @@ const App: React.FC = () => {
             )}
           </section>
 
-              {/* Column 3: Comments (visible when a request is selected) */}
-              {view === "detail" && (
-                <section className="md:col-span-3">
-                  {selectedRequest ? (
-                    <CommentsPanel prId={selectedRequest.id} lang={language} t={t} />
-                  ) : (
-                    <section className="rounded-xl border border-dashed border-border bg-card/60 p-5 text-sm text-subtext">
-                      {t('discussionComments')}
-                    </section>
-                  )}
-                </section>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-      
+          {/* Column 3: Comments (visible when a request is selected) */}
+          <section className="md:col-span-3">
+            {selectedRequest ? (
+              <CommentsPanel prId={selectedRequest.id} lang={language} t={t} />
+            ) : (
+              <section className="rounded-xl border border-dashed border-border bg-card/60 p-5 text-sm text-subtext">
+                {t('discussionComments')}
+              </section>
+            )}
+          </section>
+        </div>
+        )}
+      </main>
       <ToastContainer t={t} toasts={toasts} onClose={closeToast} />
     </div>
   );
