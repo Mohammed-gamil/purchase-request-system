@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DEFAULT_BACKEND_PORT = Number(process.env.BACKEND_PORT) || 8000;
+const DEFAULT_BACKEND_PORT = Number( 8000);
 const DEFAULT_FRONTEND_PORT = Number(process.env.FRONTEND_PORT) || 8080;
 
 function findAvailablePort(startPort, host = '127.0.0.1') {

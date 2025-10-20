@@ -2,6 +2,7 @@
 import { authService } from "@/lib/auth";
 import { approvalsApi, requestsApi, adminApi, apiClient, notificationsApi } from "@/lib/api";
 import InventoryManagement from "@/pages/InventoryManagement";
+import SalesVisitManagement from "@/pages/SalesVisitManagement";
 import {
   Plus,
   FileText,
@@ -22,6 +23,8 @@ import {
   Download,
   BarChart3,
   Activity,
+  ChevronDown,
+  FileSpreadsheet,
 } from "lucide-react";
 
 // Single-file SPA for Purchase Requests styled like an email client
@@ -67,8 +70,9 @@ export type PurchaseRequest = {
 export type User = {
   id: string | number;
   name: string;
-  role: "user" | "manager" | "accountant";
-  apiRole?: "USER" | "DIRECT_MANAGER" | "ACCOUNTANT" | "ADMIN" | "FINAL_MANAGER";
+  role: "user" | "manager" | "accountant" | "sales";
+  email?: string;
+  apiRole?: "USER" | "DIRECT_MANAGER" | "ACCOUNTANT" | "ADMIN" | "FINAL_MANAGER" | "SALES_REP" | "SUPER_ADMIN";
 };
 
 type Language = "en" | "ar";
@@ -111,7 +115,10 @@ function mapApiRoleToUi(role?: string): User["role"] {
     case "DIRECT_MANAGER":
     case "FINAL_MANAGER":
     case "ADMIN":
+    case "SUPER_ADMIN":
       return "manager";
+    case "SALES_REP":
+      return "sales";
     case "USER":
     default:
       return "user";
@@ -233,6 +240,7 @@ const i18n: Record<Language, Record<string, string>> = {
     user: "User",
     manager: "Manager",
     accountant: "Accountant",
+    sales: "Sales Representative",
     login: "Login",
     logout: "Logout",
     welcome: "Welcome! Select a request from the list or create a new one.",
@@ -243,6 +251,58 @@ const i18n: Record<Language, Record<string, string>> = {
     requests: "Requests",
     inventory: "Inventory",
     inventoryManagement: "Inventory Management",
+    salesVisits: "Sales Visits",
+    myVisits: "My Visits",
+    allVisits: "All Sales Visits",
+    newVisit: "New Visit",
+    visitDetails: "Visit Details",
+    manageYourClientVisits: "Manage your client visits and follow-ups",
+    manageAllSalesVisits: "Manage all sales representative visits",
+    totalVisits: "Total Visits",
+    pendingReview: "Pending Review",
+    approved: "Approved",
+    conversionRate: "Conversion Rate",
+    searchVisits: "Search visits...",
+    allStatuses: "All Statuses",
+    draft: "Draft",
+    submitted: "Submitted",
+    pending_review: "Pending Review",
+    actionRequired: "Action Required",
+    action_required: "Action Required",
+    quotationSent: "Quotation Sent",
+    quotation_sent: "Quotation Sent",
+    closedWon: "Closed - Won",
+    closed_won: "Closed - Won",
+    closedLost: "Closed - Lost",
+    closed_lost: "Closed - Lost",
+    visitDate: "Visit Date",
+    client: "Client",
+    salesRep: "Sales Rep",
+    businessType: "Business Type",
+    nextAction: "Next Action",
+    viewDetails: "View Details",
+    noVisitsFound: "No visits found",
+    createFirstVisit: "Create your first visit",
+    editVisit: "Edit Visit",
+    selectClient: "Select Client",
+    change: "Change",
+    addNewClient: "Add New Client",
+    storeName: "Store Name",
+    contactPerson: "Contact Person",
+    mobile: "Mobile",
+    mobile2: "Mobile 2",
+    address: "Address",
+    selectBusinessType: "Select Business Type",
+    pleaseFillRequiredFields: "Please fill all required fields",
+    failedToCreateClient: "Failed to create client",
+    failedToSaveVisit: "Failed to save visit",
+    update: "Update",
+    exportExcel: "Export to Excel",
+    exportPdf: "Export to PDF",
+    exportFailed: "Failed to export",
+    statusUpdated: "Status updated successfully",
+    updateFailed: "Failed to update status",
+    notesAdded: "Notes added successfully",
     requester: "Requester",
     submitted: "Submitted",
     status: "Status",
@@ -425,6 +485,7 @@ const i18n: Record<Language, Record<string, string>> = {
     user: "مستخدم",
     manager: "مدير",
     accountant: "محاسب",
+    sales: "مندوب مبيعات",
     login: "تسجيل الدخول",
     logout: "تسجيل الخروج",
     welcome: "مرحبًا! اختر طلبًا من القائمة أو أنشئ طلبًا جديدًا.",
@@ -435,6 +496,58 @@ const i18n: Record<Language, Record<string, string>> = {
     requests: "الطلبات",
     inventory: "المخزون",
     inventoryManagement: "إدارة المخزون",
+    salesVisits: "زيارات المبيعات",
+    myVisits: "زياراتي",
+    allVisits: "جميع زيارات المبيعات",
+    newVisit: "زيارة جديدة",
+    visitDetails: "تفاصيل الزيارة",
+    manageYourClientVisits: "إدارة زيارات العملاء والمتابعات",
+    manageAllSalesVisits: "إدارة جميع زيارات مندوبي المبيعات",
+    totalVisits: "إجمالي الزيارات",
+    pendingReview: "قيد المراجعة",
+    approved: "موافق عليها",
+    conversionRate: "معدل التحويل",
+    searchVisits: "بحث في الزيارات...",
+    allStatuses: "جميع الحالات",
+    draft: "مسودة",
+    submitted: "مُرسلة",
+    pending_review: "قيد المراجعة",
+    actionRequired: "يتطلب إجراء",
+    action_required: "يتطلب إجراء",
+    quotationSent: "تم إرسال العرض",
+    quotation_sent: "تم إرسال العرض",
+    closedWon: "مغلقة - فوز",
+    closed_won: "مغلقة - فوز",
+    closedLost: "مغلقة - خسارة",
+    closed_lost: "مغلقة - خسارة",
+    visitDate: "تاريخ الزيارة",
+    client: "العميل",
+    salesRep: "مندوب المبيعات",
+    businessType: "نوع النشاط",
+    nextAction: "الإجراء التالي",
+    viewDetails: "عرض التفاصيل",
+    noVisitsFound: "لم يتم العثور على زيارات",
+    createFirstVisit: "إنشاء أول زيارة",
+    editVisit: "تعديل الزيارة",
+    selectClient: "اختر عميل",
+    change: "تغيير",
+    addNewClient: "إضافة عميل جديد",
+    storeName: "اسم المتجر",
+    contactPerson: "شخص الاتصال",
+    mobile: "الجوال",
+    mobile2: "الجوال 2",
+    address: "العنوان",
+    selectBusinessType: "اختر نوع النشاط",
+    pleaseFillRequiredFields: "يرجى ملء جميع الحقول المطلوبة",
+    failedToCreateClient: "فشل إنشاء العميل",
+    failedToSaveVisit: "فشل حفظ الزيارة",
+    update: "تحديث",
+    exportExcel: "تصدير إلى Excel",
+    exportPdf: "تصدير إلى PDF",
+    exportFailed: "فشل التصدير",
+    statusUpdated: "تم تحديث الحالة بنجاح",
+    updateFailed: "فشل تحديث الحالة",
+    notesAdded: "تمت إضافة الملاحظات بنجاح",
     requester: "مُقدِّم الطلب",
     submitted: "تاريخ التقديم",
     status: "الحالة",
@@ -2521,7 +2634,7 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
           onChange={(e)=>setRole(e.target.value)} 
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
         >
-          {['USER','DIRECT_MANAGER','ACCOUNTANT','FINAL_MANAGER','ADMIN'].map(r => (
+          {['USER','DIRECT_MANAGER','ACCOUNTANT','FINAL_MANAGER','ADMIN','SALES_REP'].map(r => (
             <option key={r} value={r}>{r.replace('_', ' ')}</option>
           ))}
         </select>
@@ -2564,7 +2677,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [view, setView] = useState<"detail" | "creating" | "creatingProject">("detail");
-  const [section, setSection] = useState<"requests" | "inventory" | "admin">("requests");
+  const [section, setSection] = useState<"requests" | "inventory" | "admin" | "sales-visits">("requests");
   const [search, setSearch] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   // Filters
@@ -2583,6 +2696,7 @@ const App: React.FC = () => {
   const [quickFilter, setQuickFilter] = useState<"all" | "my" | "pending" | "thisWeek">("all");
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
     id: string | number;
@@ -2650,6 +2764,14 @@ const App: React.FC = () => {
     localStorage.setItem(LS_KEYS.requests, JSON.stringify(requests));
   }, [requests]);
 
+  // Auto-redirect SALES_REP to sales-visits
+  useEffect(() => {
+    if (currentUser?.apiRole === 'SALES_REP' && section !== 'sales-visits') {
+      setSection('sales-visits');
+      setView('detail');
+    }
+  }, [currentUser, section]);
+
   // Initial data load on first login
   useEffect(() => {
     if (!currentUser) return;
@@ -2664,7 +2786,7 @@ const App: React.FC = () => {
                   ...prev,
                   // Keep existing display name, only refresh role fields
                   role: mapApiRoleToUi(serverUser.role),
-                  apiRole: ["USER","DIRECT_MANAGER","ACCOUNTANT","ADMIN","FINAL_MANAGER"].includes(serverUser.role) ? (serverUser.role as User["apiRole"]) : undefined,
+                  apiRole: ["USER","DIRECT_MANAGER","ACCOUNTANT","ADMIN","FINAL_MANAGER","SALES_REP","SUPER_ADMIN"].includes(serverUser.role) ? (serverUser.role as User["apiRole"]) : undefined,
                 }
               : prev
           );
@@ -3525,64 +3647,70 @@ const App: React.FC = () => {
           {/* Quick Actions */}
           {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === "ar" ? "إجراءات سريعة" : "Quick Actions"}</div>}
           
-          <button
-            onClick={() => {
-              setView("creating");
-              setSelectedRequest(null);
-              setSection("requests");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              view === "creating" ? "bg-warning text-warning-foreground shadow-md" : "hover:bg-warning/10 text-foreground"
-            )}
-            title={t("createNew")}
-          >
-            <Plus className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("createNew")}</span>}
-          </button>
+          {currentUser.apiRole !== "SALES_REP" && (
+            <button
+              onClick={() => {
+                setView("creating");
+                setSelectedRequest(null);
+                setSection("requests");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                view === "creating" ? "bg-warning text-warning-foreground shadow-md" : "hover:bg-warning/10 text-foreground"
+              )}
+              title={t("createNew")}
+            >
+              <Plus className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{t("createNew")}</span>}
+            </button>
+          )}
 
-          <button
-            onClick={() => {
-              setView("creatingProject");
-              setSelectedRequest(null);
-              setSection("requests");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              view === "creatingProject" ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10 text-foreground"
-            )}
-            title={t("submitProject")}
-          >
-            <FolderPlus className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("submitProject")}</span>}
-          </button>
+          {currentUser.apiRole !== "SALES_REP" && (
+            <button
+              onClick={() => {
+                setView("creatingProject");
+                setSelectedRequest(null);
+                setSection("requests");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                view === "creatingProject" ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10 text-foreground"
+              )}
+              title={t("submitProject")}
+            >
+              <FolderPlus className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{t("submitProject")}</span>}
+            </button>
+          )}
 
           {/* Sections */}
           {sidebarOpen && <div className={clsx("text-xs font-bold text-subtext uppercase tracking-wide px-2 py-2 mt-4", language === "ar" && "text-right")}>{language === 'ar' ? 'الأقسام' : 'Sections'}</div>}
           
-          <button
-            onClick={() => {
-              setSection("requests");
-              setView("detail");
-            }}
-            className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-              language === "ar" && "flex-row-reverse",
-              section === "requests" 
-                ? clsx(
-                    "bg-warning/20 text-warning",
-                    language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
-                  )
-                : "hover:bg-secondary text-foreground"
-            )}
-            title={t("requests")}
-          >
-            <FileText className="h-5 w-5 shrink-0" />
-            {sidebarOpen && <span>{t("requests")}</span>}
-            {sidebarOpen && section === "requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-          </button>
+          {currentUser.apiRole !== "SALES_REP" && (
+            <button
+              onClick={() => {
+                setSection("requests");
+                setView("detail");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                section === "requests" 
+                  ? clsx(
+                      "bg-warning/20 text-warning",
+                      language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
+                    )
+                  : "hover:bg-secondary text-foreground"
+              )}
+              title={t("requests")}
+            >
+              <FileText className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{t("requests")}</span>}
+              {sidebarOpen && section === "requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+            </button>
+          )}
 
           {(currentUser.apiRole === "DIRECT_MANAGER" || currentUser.apiRole === "FINAL_MANAGER" || currentUser.apiRole === "ADMIN") && (
             <button
@@ -3605,6 +3733,30 @@ const App: React.FC = () => {
               <Settings className="h-5 w-5 shrink-0" />
               {sidebarOpen && <span>{t("inventory")}</span>}
               {sidebarOpen && section === "inventory" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+            </button>
+          )}
+
+          {(currentUser.apiRole === "ADMIN" || currentUser.apiRole === "SUPER_ADMIN" || currentUser.apiRole === "SALES_REP" || currentUser.role === "manager" || currentUser.role === "sales") && (
+            <button
+              onClick={() => {
+                setSection("sales-visits");
+                setView("detail");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                section === "sales-visits" 
+                  ? clsx(
+                      "bg-primary/20 text-primary",
+                      language === "ar" ? "border-r-4 border-primary" : "border-l-4 border-primary"
+                    )
+                  : "hover:bg-secondary text-foreground"
+              )}
+              title={t("salesVisits")}
+            >
+              <Users className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{t("salesVisits")}</span>}
+              {sidebarOpen && section === "sales-visits" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
             </button>
           )}
 
@@ -3718,7 +3870,7 @@ const App: React.FC = () => {
           <div className="px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold">
-                {section === "inventory" ? t("inventoryManagement") : section === "admin" ? t("adminPanel") : t("requests")}
+                {section === "inventory" ? t("inventoryManagement") : section === "admin" ? t("adminPanel") : section === "sales-visits" ? t("salesVisits") : t("requests")}
               </h1>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-subtext hidden sm:inline">
@@ -3879,6 +4031,8 @@ const App: React.FC = () => {
 
           {section === "inventory" ? (
             <InventoryManagement language={language} currentUser={currentUser} t={t} />
+          ) : section === "sales-visits" ? (
+            <SalesVisitManagement language={language} currentUser={currentUser} t={t} />
           ) : section === "admin" ? (
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Admin Dashboard Header */}
@@ -3961,15 +4115,78 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSection('sales-visits')}>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-purple-500/10 text-purple-500 grid place-items-center">
+                        <TrendingUp className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-subtext uppercase tracking-wide">{language === 'ar' ? 'زيارات المبيعات' : 'Sales Visits'}</div>
+                        <div className="text-2xl font-bold text-purple-500 mt-1">{adminUsers.filter(u => u.role === 'SALES_REP').length}</div>
+                        <div className="text-xs text-subtext mt-1">{language === 'ar' ? 'مندوبي مبيعات نشطين' : 'Active Sales Reps'}</div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
                     <div className="text-xs font-semibold text-subtext uppercase tracking-wide mb-3">{language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions'}</div>
-                    <button
-                      onClick={handleExportToCSV}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
-                    >
-                      <Download className="h-4 w-4" />
-                      {language === 'ar' ? 'تصدير جميع الطلبات' : 'Export All Requests'}
-                    </button>
+                    <div className="space-y-2">
+                      {/* Export Requests Dropdown */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowExportDropdown(!showExportDropdown)}
+                          className="w-full flex items-center justify-between gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Download className="h-4 w-4" />
+                            {language === 'ar' ? 'تصدير الطلبات' : 'Export Requests'}
+                          </div>
+                          <ChevronDown className={clsx("h-4 w-4 transition-transform", showExportDropdown && "rotate-180")} />
+                        </button>
+                        {showExportDropdown && (
+                          <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-card shadow-lg z-10 overflow-hidden">
+                            <button
+                              onClick={() => {
+                                handleExportToCSV();
+                                setShowExportDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors text-left"
+                            >
+                              <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                              <span>{language === 'ar' ? 'تصدير إلى CSV' : 'Export to CSV'}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleExportToCSV();
+                                setShowExportDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors text-left"
+                            >
+                              <FileSpreadsheet className="h-4 w-4 text-green-700" />
+                              <span>{language === 'ar' ? 'تصدير إلى Excel' : 'Export to Excel'}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleExportToCSV();
+                                setShowExportDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors text-left"
+                            >
+                              <FileText className="h-4 w-4 text-red-600" />
+                              <span>{language === 'ar' ? 'تصدير إلى PDF' : 'Export to PDF'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Manage Sales Visits Button */}
+                      <button
+                        onClick={() => setSection('sales-visits')}
+                        className="w-full flex items-center justify-center gap-2 rounded-lg bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                        {language === 'ar' ? 'إدارة الزيارات' : 'Manage Sales Visits'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4028,9 +4245,11 @@ const App: React.FC = () => {
                         const isActive = user.status === 'active' || user.is_active;
                         const roleColors: Record<string, string> = {
                           ADMIN: 'bg-red-100 text-red-800 border-red-200',
+                          SUPER_ADMIN: 'bg-red-100 text-red-800 border-red-200',
                           FINAL_MANAGER: 'bg-purple-100 text-purple-800 border-purple-200',
                           DIRECT_MANAGER: 'bg-blue-100 text-blue-800 border-blue-200',
                           ACCOUNTANT: 'bg-green-100 text-green-800 border-green-200',
+                          SALES_REP: 'bg-orange-100 text-orange-800 border-orange-200',
                           USER: 'bg-gray-100 text-gray-800 border-gray-200',
                         };
                         return (

@@ -50,6 +50,11 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
   const [form, setForm] = useState({
     name: '',
     description: '',
+    // categoryChoice stores the selected option from the dropdown (existing category or '__custom')
+    categoryChoice: '',
+    // customCategory stores the typed custom category name when categoryChoice === '__custom'
+    customCategory: '',
+    // category kept for backward compatibility (will not be directly bound to UI anymore)
     category: '',
     quantity: '0',
     unit: '',
@@ -70,10 +75,16 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
   function validateForm(): boolean {
     const errs: Record<string,string> = {};
     if (!form.name.trim()) errs.name = t ? t('requiredField') : 'Required';
-    if (!form.category.trim()) {
-      errs.category = t ? t('requiredField') : 'Required';
-    } else if (form.category === '__custom') {
-      errs.category = t ? t('enterCustomCategory') : 'Enter custom category';
+    // Validate category selection or custom entry
+    if (form.categoryChoice === '__custom') {
+      if (!form.customCategory.trim()) {
+        errs.category = t ? t('enterCustomCategory') : 'Enter custom category';
+      }
+    } else {
+      const selected = (form.categoryChoice || form.category || '').trim();
+      if (!selected) {
+        errs.category = t ? t('requiredField') : 'Required';
+      }
     }
     const qty = Number(form.quantity);
     if (!isFinite(qty) || qty < 0) errs.quantity = t ? t('numberMustBePositive') : 'Must be a positive number';
@@ -91,10 +102,13 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
     setCreating(true);
     setFeedback(null);
     try {
+      const categoryValue = (form.categoryChoice === '__custom'
+        ? form.customCategory.trim()
+        : (form.categoryChoice || form.category).trim());
       await inventoryApi.createItem({
         name: form.name.trim(),
         description: form.description.trim() || undefined,
-        category: form.category.trim(),
+        category: categoryValue,
         quantity: Number(form.quantity) || 0,
         unit: form.unit.trim() || 'unit',
         unit_cost: form.unit_cost ? Number(form.unit_cost) : undefined,
@@ -108,9 +122,10 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
       setShowCreateModal(false);
       // Reset form
       setForm({
-        name: '', description: '', category: '', quantity: '0', unit: '', unit_cost: '', location: '', condition: 'good', last_maintenance_date: '', next_maintenance_date: '', notes: ''
+        name: '', description: '', categoryChoice: '', customCategory: '', category: '', quantity: '0', unit: '', unit_cost: '', location: '', condition: 'good', last_maintenance_date: '', next_maintenance_date: '', notes: ''
       });
       await loadInventory();
+      await loadCategories();
     } catch (err) {
       console.error('Create failed', err);
       setFeedback(t ? t('createFailed') : 'Create failed');
@@ -126,6 +141,8 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
     setForm({
       name: item.name || '',
       description: item.description || '',
+      categoryChoice: item.category || '',
+      customCategory: '',
       category: item.category || '',
       quantity: String(item.quantity ?? 0),
       unit: item.unit || '',
@@ -147,10 +164,13 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
     setUpdating(true);
     setFeedback(null);
     try {
+      const categoryValue = (form.categoryChoice === '__custom'
+        ? form.customCategory.trim()
+        : (form.categoryChoice || form.category).trim());
       await inventoryApi.updateItem(editingItem.id, {
         name: form.name.trim() || undefined,
         description: form.description.trim() || undefined,
-        category: form.category.trim() || undefined,
+        category: categoryValue || undefined,
         unit: form.unit.trim() || undefined,
         unit_cost: form.unit_cost ? Number(form.unit_cost) : undefined,
         location: form.location.trim() || undefined,
@@ -160,6 +180,7 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
       setFeedback(t ? t('itemUpdated') : 'Item updated');
       setEditingItem(null);
       await loadInventory();
+      await loadCategories();
     } catch (err) {
       console.error('Update failed', err);
       setFeedback(t ? t('updateFailed') : 'Update failed');
@@ -178,6 +199,7 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
       setFeedback(t ? t('itemDeleted') : 'Item deleted successfully');
       setItemToDelete(null);
       await loadInventory();
+      await loadCategories();
     } catch (err: any) {
       console.error('Delete failed', err);
       const errorMsg = err?.message || '';
@@ -511,8 +533,8 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
                 <div>
                   <label className="block mb-2 text-sm font-bold text-primary uppercase tracking-wide">{t ? t('categoryField') : 'Category'}</label>
                   <select
-                    value={form.category}
-                    onChange={(e)=>updateForm('category', e.target.value)}
+                    value={form.categoryChoice}
+                    onChange={(e)=>updateForm('categoryChoice', e.target.value)}
                     className={`w-full rounded-lg border-2 bg-background px-3 py-2.5 font-semibold shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.category ? 'border-red-500 focus:ring-red-200' : 'border-border focus:border-primary focus:ring-primary/20'}`}
                   >
                     <option value="">{t ? t('selectCategory') : 'Select Category'}</option>
@@ -521,12 +543,13 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
                     ))}
                     <option value="__custom">{t ? t('customCategory') : '+ Custom Category'}</option>
                   </select>
-                  {form.category === '__custom' && (
+                  {form.categoryChoice === '__custom' && (
                     <input
                       autoFocus
+                      value={form.customCategory}
                       placeholder={t ? t('enterCustomCategory') : 'Enter custom category name'}
                       className={`mt-2 w-full rounded-lg border-2 bg-background px-3 py-2.5 font-medium shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.category ? 'border-red-500 focus:ring-red-200' : 'border-border focus:border-primary focus:ring-primary/20'}`}
-                      onChange={(e)=>updateForm('category', e.target.value.trim())}
+                      onChange={(e)=>updateForm('customCategory', e.target.value)}
                     />
                   )}
                   {formErrors.category && <p className="mt-1 text-xs text-red-600 font-semibold">{formErrors.category}</p>}
@@ -633,23 +656,24 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
                   <div>
                     <label className="block mb-1 font-medium">{t ? t('categoryField') : 'Category'}</label>
                     <select
-                      value={form.category}
-                      onChange={(e)=>updateForm('category', e.target.value)}
+                      value={form.categoryChoice}
+                      onChange={(e)=>updateForm('categoryChoice', e.target.value)}
                       className={`w-full rounded-md border bg-background px-3 py-2 ${formErrors.category ? 'border-red-500' : 'border-border'}`}
                     >
                       <option value="">{t ? t('selectCategory') : 'Select Category'}</option>
                       {/* Ensure existing item category appears even if not in categories list */}
-                      {[...new Set([...(categories||[]), form.category].filter(Boolean))].map(cat => (
+                      {[...new Set([...(categories||[]), form.categoryChoice].filter(Boolean))].map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                       <option value="__custom">{t ? t('customCategory') : 'Custom Category'}</option>
                     </select>
-                    {form.category === '__custom' && (
+                    {form.categoryChoice === '__custom' && (
                       <input
                         autoFocus
+                        value={form.customCategory}
                         placeholder={t ? t('enterCustomCategory') : 'Enter custom category'}
                         className={`mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm ${formErrors.category ? 'border-red-500' : 'border-border'}`}
-                        onChange={(e)=>updateForm('category', e.target.value.trim())}
+                        onChange={(e)=>updateForm('customCategory', e.target.value)}
                       />
                     )}
                     {formErrors.category && <p className="mt-1 text-xs text-red-600">{formErrors.category}</p>}

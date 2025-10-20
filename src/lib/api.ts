@@ -639,6 +639,213 @@ export const inventoryApi = {
   },
 };
 
+// Sales Visits API
+export const visitsApi = {
+  // Get visits (reps see only their own, admins see all)
+  getVisits: async (params?: {
+    per_page?: number;
+    status?: string;
+    search?: string;
+    rep_id?: number;
+    date_from?: string;
+    date_to?: string;
+    business_type_id?: number;
+  }): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get('/visits', params);
+  },
+
+  // Get single visit
+  getVisit: async (id: string | number): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.get(`/visits/${id}`);
+  },
+
+  // Create visit (Sales Rep only)
+  createVisit: async (data: Record<string, any>): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.post('/visits', data);
+  },
+
+  // Update visit
+  updateVisit: async (id: string | number, data: Record<string, any>): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.put(`/visits/${id}`, data);
+  },
+
+  // Update visit status (Admin and Sales Rep)
+  updateVisitStatus: async (id: string | number, data: {
+    status: string;
+    notes?: string;
+  }): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.post(`/visits/${id}/status`, data);
+  },
+
+  // Add notes to visit (Sales Rep adds rep_notes, Admin adds admin_notes)
+  addVisitNotes: async (id: string | number, data: {
+    rep_notes?: string;
+    admin_notes?: string;
+  }): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.post(`/visits/${id}/notes`, data);
+  },
+
+  // Get visit status history
+  getVisitHistory: async (id: string | number): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get(`/visits/${id}/history`);
+  },
+
+  // Search clients (for autocomplete)
+  searchClients: async (query: string): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get('/visits/clients/search', { q: query });
+  },
+
+  // Get all clients
+  getClients: async (params?: {
+    per_page?: number;
+    search?: string;
+  }): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get('/visits/clients', params);
+  },
+
+  // Create client
+  createClient: async (data: {
+    store_name: string;
+    contact_person: string;
+    mobile: string;
+    mobile_2?: string;
+    address: string;
+    business_type_id: number;
+  }): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.post('/visits/clients', data);
+  },
+
+  // Get business types
+  getBusinessTypes: async (): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get('/visits/business-types');
+  },
+
+  // Get product categories
+  getProductCategories: async (): Promise<ApiResponse<Array<Record<string, any>>>> => {
+    return apiClient.get('/visits/product-categories');
+  },
+
+  // Upload visit files
+  uploadVisitFile: async (visitId: string | number, file: File): Promise<ApiResponse<Record<string, any>>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return apiClient.post(`/visits/${visitId}/files`, formData);
+  },
+
+  // Delete visit file
+  deleteVisitFile: async (visitId: string | number, fileId: string | number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/visits/${visitId}/files/${fileId}`);
+  },
+
+  // Get visit statistics
+  getVisitStats: async (params?: {
+    rep_id?: number;
+    date_from?: string;
+    date_to?: string;
+  }): Promise<ApiResponse<Record<string, any>>> => {
+    return apiClient.get('/visits/stats', params);
+  },
+
+  // Export visits to Excel
+  exportExcel: async (params?: {
+    status?: string;
+    search?: string;
+    rep_id?: number;
+    date_from?: string;
+    date_to?: string;
+    business_type_id?: number;
+  }): Promise<void> => {
+    const token = tokenManager.getToken();
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const url = `${API_BASE_URL}/visits/export/excel?${queryParams.toString()}`;
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `visits_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Add authorization header via fetch
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Export error:', error);
+        throw new Error('Failed to export visits');
+      });
+  },
+
+  // Export visits to PDF
+  exportPdf: async (params?: {
+    status?: string;
+    search?: string;
+    rep_id?: number;
+    date_from?: string;
+    date_to?: string;
+    business_type_id?: number;
+  }): Promise<void> => {
+    const token = tokenManager.getToken();
+    const queryParams = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const url = `${API_BASE_URL}/visits/export/pdf?${queryParams.toString()}`;
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `visits_export_${new Date().toISOString().split('T')[0]}.html`;
+    
+    // Add authorization header via fetch
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Export error:', error);
+        throw new Error('Failed to export visits');
+      });
+  },
+};
+
 // Notifications API
 export const notificationsApi = {
   // Get all notifications for current user
@@ -690,6 +897,7 @@ const api = {
   managerReports: managerReportsApi,
   inventory: inventoryApi,
   health: healthApi,
+  visits: visitsApi,
 };
 
 export default api;

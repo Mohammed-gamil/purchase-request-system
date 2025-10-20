@@ -10,4 +10,5 @@ composer.lock
 package-lock.json
 bun.lockb
 action_G_backend/
+Action-G-backend/
 *.timestamp-*.mjs
