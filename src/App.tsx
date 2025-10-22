@@ -2797,6 +2797,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<"detail" | "creating" | "creatingProject">("detail");
   const [section, setSection] = useState<"requests" | "inventory" | "admin" | "sales-visits">("requests");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [toasts, setToasts] = useState<Toast[]>([]);
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -2826,6 +2827,23 @@ const App: React.FC = () => {
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<"all" | "my" | "pending" | "thisWeek">("all");
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
+  // Controls whether the right-hand comments panel is shown on tablet-sized viewports.
+  // Default to true; a resize listener will auto-toggle based on breakpoint (900px).
+  const [showCommentsOnTablet, setShowCommentsOnTablet] = useState<boolean>(true);
+  useEffect(() => {
+    function handleResize() {
+      try {
+        if (window.innerWidth >= 900) setShowCommentsOnTablet(true);
+        else setShowCommentsOnTablet(false);
+      } catch (e) {
+        // ignore (SSR / test environments)
+      }
+    }
+    // initialize and listen for changes
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -3063,12 +3081,23 @@ const App: React.FC = () => {
   }
   async function handleUploadQuoteUrl(id: string, quote: { vendorName: string; quoteTotal: number; fileUrl: string; notes?: string }) {
     try {
-      const resp = await requestsApi.uploadQuoteUrl(id, {
+      const payload = {
         vendor_name: quote.vendorName,
         quote_total: quote.quoteTotal,
         file_url: quote.fileUrl,
         notes: quote.notes,
-      });
+      };
+      console.log('Sending payload:', payload);
+      
+      // Validate URL before sending
+      try {
+        new URL(payload.file_url);
+      } catch (_) {
+        addToast("error", "Please enter a valid URL for the quote file (e.g., https://example.com/quote.pdf)");
+        return;
+      }
+      
+      const resp = await requestsApi.uploadQuoteUrl(id, payload);
       const updated = resp.data ? mapApiRequestToUi(resp.data) : undefined;
       if (updated) {
         setRequests((prev) => prev.map((p) => (p.id === id ? mergeRequestUpdate(p, updated) : p)));
@@ -3076,6 +3105,8 @@ const App: React.FC = () => {
         addToast("success", t("quoteUploaded"));
       }
     } catch (e) {
+      console.log('Error details:', JSON.stringify((e as any)?.response?.data, null, 2));
+      console.log('Status:', (e as any)?.response?.status);
       console.error("Upload quote failed", e);
       addToast("error", t("actionFailed"));
     }
@@ -4712,18 +4743,54 @@ const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-6">
+            <div className="app-grid">
               {/* Column 1: Request List - Hide when creating */}
               {view === "detail" && (
-                <section className="md:col-span-4 lg:col-span-3">
+                <section className="app-panel">
                   <div className="rounded-xl border border-border bg-card shadow-md hover:shadow-lg transition-shadow duration-200">
                     <div className="flex flex-wrap items-center gap-2 border-b border-border p-2 md:p-3">
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder={t("search")}
-                        className="w-full rounded-md border border-border bg-background px-2 md:px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        className="flex-1 rounded-md border border-border bg-background px-2 md:px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
                       />
+                      <button
+                        onClick={() => setViewMode(viewMode === "cards" ? "table" : "cards")}
+                        className={clsx(
+                          "inline-flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold transition-all duration-200 touch-target",
+                          viewMode === "cards" ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"
+                        )}
+                        title={viewMode === "cards" ? "Switch to table view" : "Switch to card view"}
+                      >
+                        {viewMode === "cards" ? (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            Table
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            Cards
+                          </>
+                        )}
+                      </button>
+                      {/* Tablet-only comments toggle */}
+                      <button
+                        className="ms-2 ml-2 hidden md:inline-flex touch-target"
+                        onClick={() => setShowCommentsOnTablet((v) => !v)}
+                        aria-label="Toggle comments panel"
+                      >
+                        {showCommentsOnTablet ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                        )}
+                      </button>
                     </div>
               {showFilters && (
                 <div className="border-b border-border p-3">
@@ -4818,7 +4885,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center pt-2 border-t border-border">
                       <span className="text-xs text-subtext">{filtered.length} {filtered.length === 1 ? 'result' : 'results'}</span>
-                      <button onClick={clearFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all duration-200">
+                      <button onClick={clearFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all duration-200 touch-target">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -4828,7 +4895,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="max-h-[60vh] md:max-h-[70vh] space-y-2 overflow-auto p-2 md:p-3">
+              <div className="app-panel max-h-[60vh] md:max-h-[70vh] space-y-2 overflow-auto p-2 md:p-3">
                 {isLoading ? (
                   <div className="space-y-2">
                     {[1, 2, 3, 4].map((n) => (
@@ -4854,7 +4921,7 @@ const App: React.FC = () => {
                     <p className="text-sm font-semibold text-foreground">{t("noRequests")}</p>
                     <p className="text-xs text-subtext mt-1">Start by creating a new request above</p>
                   </div>
-                ) : (
+                ) : viewMode === "cards" ? (
                   filtered.map((pr) => (
                     <RequestCard
                       key={pr.id}
@@ -4870,6 +4937,84 @@ const App: React.FC = () => {
                       onToggleCheck={toggleRequestSelection}
                     />
                   ))
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">
+                            <label className="checkbox-wrap" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={filtered.length > 0 && filtered.every(pr => selectedRequestIds.has(pr.id))}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRequestIds(new Set(filtered.map(pr => pr.id)));
+                                  } else {
+                                    setSelectedRequestIds(new Set());
+                                  }
+                                }}
+                                className="h-4 w-4 rounded border-border accent-warning cursor-pointer"
+                              />
+                            </label>
+                          </th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">{t("title")}</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">{t("requester")}</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">{t("status")}</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">{t("submittedDate")}</th>
+                          <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-primary">{t("totalEstimatedCost")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border bg-card">
+                        {filtered.map((pr) => (
+                          <tr
+                            key={pr.id}
+                            className={clsx(
+                              "hover:bg-secondary/30 transition-colors cursor-pointer",
+                              selectedRequest?.id === pr.id && view === "detail" && "bg-warning/10"
+                            )}
+                            onClick={() => {
+                              setSelectedRequest(pr);
+                              setView("detail");
+                            }}
+                          >
+                            <td className="px-3 py-4">
+                              <label className="checkbox-wrap" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedRequestIds.has(pr.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleRequestSelection(pr.id);
+                                  }}
+                                  className="h-4 w-4 rounded border-border accent-warning cursor-pointer"
+                                />
+                              </label>
+                            </td>
+                            <td className="px-3 py-4 text-sm font-medium text-foreground truncate max-w-xs">
+                              {pr.type === "project" && <FolderPlus className="h-4 w-4 text-primary inline mr-1" />}
+                              {pr.title}
+                            </td>
+                            <td className="px-3 py-4 text-sm text-foreground">{pr.requester}</td>
+                            <td className="px-3 py-4">
+                              <span className={clsx(
+                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                statusBadgeColor(pr.status)
+                              )}>
+                                {pr.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-4 text-sm text-foreground">
+                              {new Date(pr.submittedDate).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US")}
+                            </td>
+                            <td className="px-3 py-4 text-sm font-semibold text-warning">
+                              {formatCurrency(pr.totalEstimatedCost, language)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </div>
@@ -4878,7 +5023,7 @@ const App: React.FC = () => {
 
           {/* Column 2: Detail or Create */}
           <section className={clsx(
-            view === "creating" || view === "creatingProject" ? "md:col-span-12" : "md:col-span-8 lg:col-span-9"
+            view === "creating" || view === "creatingProject" ? "md:col-span-12" : "md:col-span-5 lg:col-span-6"
           )}>
             {view === "creating" ? (
               <RequestCreateForm
@@ -4918,7 +5063,7 @@ const App: React.FC = () => {
 
               {/* Column 3: Comments (visible when a request is selected) */}
               {view === "detail" && (
-                <section className="md:col-span-3">
+                <section className="md:col-span-4">
                   {selectedRequest ? (
                     <CommentsPanel prId={selectedRequest.id} lang={language} t={t} />
                   ) : (

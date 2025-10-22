@@ -1256,3 +1256,82 @@
   font-weight: 600;
 }
 /* End of avatar styles */
+
+/* ==========================================================================
+   App grid helpers, touch targets and tablet collapse behavior
+   ========================================================================== */
+
+/* Use a named grid container for the PR page. This replaces md:grid-cols-12
+   in the PR page markup so we have a single place to control column widths. */
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Each panel should be scrollable and constrained in height to avoid layout
+   jumps on tablets; add padding via existing utilities or inline classes. */
+.app-panel {
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+}
+
+/* Tablet: 3-column layout with a fluid middle column (clamp keeps it sane)
+   Left and right columns are reasonably fixed and won't collapse on tablets. */
+@media (min-width: 768px) {
+  .app-grid {
+    grid-template-columns: 220px clamp(380px, 48vw, 640px) 280px;
+  }
+}
+
+/* Desktop: widen sidebars slightly and let middle column grow */
+@media (min-width: 1024px) {
+  .app-grid {
+    grid-template-columns: 240px minmax(520px, 1fr) 320px;
+  }
+}
+
+/* Ensure interactive controls meet 40x40 touch target recommendations */
+.touch-target,
+button.touch-target,
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px 8px;
+  gap: 6px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Expand hit area for small controls like checkboxes without changing visual size */
+.checkbox-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px; /* ensures at least 40px touch area in most contexts */
+  border-radius: 6px;
+  margin: -4px; /* visually keep layout tight but expand tappable area */
+}
+
+@media (max-width: 420px) {
+  .checkbox-wrap { margin: 0; }
+}
+
+/* Clickable row helper */
+.clickable-row { cursor: pointer; -webkit-tap-highlight-color: rgba(0,0,0,0.05); }
+
+/* When layout gets tight, collapse comments panel below main content */
+@media (max-width: 900px) {
+  .app-grid {
+    grid-template-columns: 200px minmax(320px, 1fr);
+    grid-auto-rows: auto;
+  }
+  .comments-panel { order: 3; }
+}

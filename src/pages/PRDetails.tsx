@@ -86,6 +86,7 @@ export default function PRDetails() {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showFundsDialog, setShowFundsDialog] = useState(false);
   const [showQuoteDialog, setShowQuoteDialog] = useState(false);
+  const [quoteErrors, setQuoteErrors] = useState<string[]>([]);
   const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [showQuotePreview, setShowQuotePreview] = useState(false);
@@ -346,6 +347,7 @@ export default function PRDetails() {
     try {
       if (!id) return;
       setLoading(true);
+      setQuoteErrors([]);
       await requestsApi.uploadQuoteUrl(id, {
         vendor_name: data.vendorName,
         quote_total: data.quoteTotal,
@@ -359,8 +361,25 @@ export default function PRDetails() {
       quoteForm.reset();
       setShowQuoteDialog(false);
     } catch (error: any) {
-      const msg = error?.response?.data?.error?.message || error?.message || t('common.errorOccurred' as any);
-      toast.error(String(msg));
+      console.log('Error in handleQuoteUpload:', error);
+      console.log('Status:', error?.response?.status);
+      console.log('Data:', error?.response?.data);
+      // If validation error from backend, surface messages inline in dialog
+      const status = error?.response?.status;
+      if (status === 422) {
+        const details = error?.response?.data?.error?.details;
+        if (Array.isArray(details) && details.length > 0) {
+          setQuoteErrors(details.map((d: any) => String(d)));
+        } else {
+          const msg = error?.response?.data?.error?.message || error?.message || t('common.errorOccurred' as any);
+          setQuoteErrors([String(msg)]);
+        }
+      } else {
+        const msg = error?.response?.data?.error?.message || error?.message || t('common.errorOccurred' as any);
+        toast.error(String(msg));
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -857,6 +876,7 @@ export default function PRDetails() {
                 id="vendorName"
                 placeholder={t('prDetails.vendorNamePlaceholder')}
                 {...quoteForm.register("vendorName")}
+                onChange={() => { if (quoteErrors.length) setQuoteErrors([]); }}
               />
               {quoteForm.formState.errors.vendorName && (
                 <p className="text-sm text-red-500">{quoteForm.formState.errors.vendorName?.message as any}</p>
@@ -870,6 +890,7 @@ export default function PRDetails() {
                 type="number"
                 step="0.01"
                 {...quoteForm.register("quoteTotal", { valueAsNumber: true })}
+                onChange={() => { if (quoteErrors.length) setQuoteErrors([]); }}
               />
               {quoteForm.formState.errors.quoteTotal && (
                 <p className="text-sm text-red-500">{quoteForm.formState.errors.quoteTotal?.message as any}</p>
@@ -883,7 +904,15 @@ export default function PRDetails() {
                 type="url"
                 placeholder="https://example.com/quote.pdf"
                 {...quoteForm.register('quoteUrl')}
+                onChange={() => { if (quoteErrors.length) setQuoteErrors([]); }}
               />
+              {quoteErrors.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {quoteErrors.map((err, i) => (
+                    <p key={i} className="text-sm text-red-500">{err}</p>
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 {t('prDetails.quoteUrlHelp' as any) || 'Provide a direct URL to the quote file.'}
               </p>
