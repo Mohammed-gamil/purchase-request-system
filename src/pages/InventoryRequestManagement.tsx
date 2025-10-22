@@ -213,20 +213,95 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       return;
     }
 
+    // Client-side validation for items
+    for (let i = 0; i < formData.items.length; i++) {
+      const it = formData.items[i];
+      if (!it.inventory_item_id) {
+        alert(isRTL ? `اختر المعدة للعنصر ${i + 1}` : `Please select equipment for item ${i + 1}`);
+        return;
+      }
+      if (!it.quantity_requested || Number(it.quantity_requested) < 1) {
+        alert(isRTL ? `حدد كمية صحيحة للعنصر ${i + 1}` : `Please enter a valid quantity for item ${i + 1}`);
+        return;
+      }
+    }
+
+    // Prepare payload that matches backend validation rules
+    const exitPurposeMap: Record<string, string> = {
+      client_shoot: 'client_project',
+      field_shoot: 'event_coverage',
+      podcast_ad: 'product_photography',
+      equipment_test: 'maintenance',
+      other: 'other',
+    };
+
+    const payload: any = {
+      title: formData.title,
+      description: formData.description || null,
+      direct_manager_id: formData.direct_manager_id ? Number(formData.direct_manager_id) : null,
+      warehouse_manager_id: formData.warehouse_manager_id ? Number(formData.warehouse_manager_id) : null,
+      employee_name: formData.employee_name || null,
+      employee_position: formData.employee_position || null,
+      employee_phone: formData.employee_phone || null,
+      exit_purpose: exitPurposeMap[formData.exit_purpose] || formData.exit_purpose,
+      custom_exit_purpose: formData.custom_exit_purpose || null,
+      client_entity_name: formData.client_entity_name || null,
+      shoot_location: formData.shoot_location || null,
+      exit_duration_from: formData.exit_duration_from || null,
+      exit_duration_to: formData.exit_duration_to || null,
+      items: formData.items.map((it: any) => ({
+        inventory_item_id: Number(it.inventory_item_id) || null,
+        quantity_requested: Number(it.quantity_requested) || 0,
+        expected_return_date: it.expected_return_date || null,
+        serial_number: it.serial_number || null,
+        condition_before_exit: it.condition_before_exit || null,
+      })),
+    };
+
     setSubmitting(true);
     try {
-      const newRequest = await inventoryRequestsApi.create(formData);
-      
+      console.log('Submitting inventory request payload:', payload);
+      const newRequest = await inventoryRequestsApi.create(payload);
+
       if (!isDraft) {
         await inventoryRequestsApi.submit(newRequest.id);
       }
-      
+
       await loadRequests();
       setShowCreateForm(false);
       alert(isRTL ? 'تم إنشاء الطلب بنجاح' : 'Request created successfully');
     } catch (error: any) {
-      console.error('Failed to create request:', error);
-      alert(error?.response?.data?.error?.message || (isRTL ? 'فشل في إنشاء الطلب' : 'Failed to create request'));
+      // Show detailed server validation errors or raw response to help debugging
+      console.error('Failed to create request (axios error):', error);
+      const resp = error?.response;
+      let message = (isRTL ? 'فشل في إنشاء الطلب' : 'Failed to create request');
+
+      if (resp) {
+        console.error('Server response status:', resp.status, resp.statusText);
+        console.error('Server response headers:', resp.headers);
+        console.error('Server response data:', resp.data);
+
+        // If server returned JSON
+        if (typeof resp.data === 'object' && resp.data !== null) {
+          // Try known shapes
+          if (resp.data.error?.message) message = resp.data.error.message;
+          else if (resp.data.message && typeof resp.data.message === 'string') message = resp.data.message;
+          else if (resp.data.errors) {
+            const firstField = Object.keys(resp.data.errors)[0];
+            if (firstField) message = resp.data.errors[firstField][0];
+          }
+        } else if (typeof resp.data === 'string') {
+          // Sometimes Laravel returns HTML stack trace on 500 — log it and show a small hint
+          const snippet = resp.data.substring(0, 1000);
+          console.error('Server returned HTML (first 1KB):', snippet);
+          message = `${isRTL ? 'خطأ في الخادم' : 'Server error'} ${resp.status} - check server logs`;
+        }
+      } else {
+        console.error('No response received from server, network error or CORS');
+        message = (isRTL ? 'تعذر الوصول إلى الخادم' : 'Unable to reach server');
+      }
+
+      alert(message);
     } finally {
       setSubmitting(false);
     }
