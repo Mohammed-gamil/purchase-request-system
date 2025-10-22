@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Calendar, MapPin, User, Phone, Building, Package, DollarSign, FileText, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { X, Calendar, MapPin, User, Phone, Building, Package, DollarSign, FileText, CheckCircle, Clock, XCircle, Download, Printer } from 'lucide-react';
 import { Visit } from '../types/visits';
 
 interface VisitDetailViewProps {
@@ -24,10 +24,11 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
   const [updatingNotes, setUpdatingNotes] = React.useState(false);
   const [updating, setUpdating] = React.useState(false);
   const isRTL = language === 'ar';
+  const contentRef = React.useRef<HTMLDivElement>(null);
   
   const isSalesRep = currentUser?.apiRole === 'SALES_REP';
   const isAdmin = currentUser?.apiRole && ['ADMIN', 'SUPER_ADMIN'].includes(currentUser.apiRole);
-  const canUpdateStatus = (isSalesRep || isAdmin) && visit.status !== 'closed_won' && visit.status !== 'closed_lost' && onStatusUpdate !== undefined;
+  const canUpdateStatus = (isSalesRep || isAdmin) && onStatusUpdate !== undefined;
   
   // Debug: Log to help troubleshoot
   React.useEffect(() => {
@@ -71,42 +72,191 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
       setUpdatingNotes(false);
     }
   };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownload = () => {
+    const element = contentRef.current;
+    if (!element) return;
+
+    // Create a printable version
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const styles = `
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', 'Tajawal', Arial, sans-serif; padding: 20px; direction: ${isRTL ? 'rtl' : 'ltr'}; }
+        .header { background: linear-gradient(to right, #2563eb, #1d4ed8); color: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        .header h1 { font-size: 24px; font-weight: bold; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #1f2937; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .info-item { padding: 10px; }
+        .info-label { font-weight: 600; color: #6b7280; font-size: 14px; margin-bottom: 5px; }
+        .info-value { color: #111827; font-size: 15px; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; }
+        .status-draft { background-color: #f3f4f6; color: #374151; }
+        .status-submitted { background-color: #dbeafe; color: #1e40af; }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        @media print {
+          body { padding: 10px; }
+          .no-print { display: none !important; }
+        }
+      </style>
+    `;
+
+    const content = `
+      <!DOCTYPE html>
+      <html dir="${isRTL ? 'rtl' : 'ltr'}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${isRTL ? 'تفاصيل الزيارة' : 'Visit Details'} - ${visit.client?.store_name || ''}</title>
+        ${styles}
+      </head>
+      <body>
+        <div class="header">
+          <h1>${isRTL ? 'تفاصيل الزيارة' : 'Visit Details'}</h1>
+          <p>${isRTL ? 'رقم الزيارة' : 'Visit'} #${visit.id} - ${new Date().toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">${isRTL ? 'الحالة' : 'Status'}</div>
+          <span class="status-badge status-${visit.status}">
+            ${visit.status.toUpperCase()}
+          </span>
+        </div>
+
+        <div class="section">
+          <div class="section-title">${isRTL ? 'معلومات العميل' : 'Client Information'}</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'اسم المتجر' : 'Store Name'}</div>
+              <div class="info-value">${visit.client?.store_name || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'جهة الاتصال' : 'Contact Person'}</div>
+              <div class="info-value">${visit.client?.contact_person || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'رقم الهاتف' : 'Mobile'}</div>
+              <div class="info-value">${visit.client?.mobile || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'البريد الإلكتروني' : 'Email'}</div>
+              <div class="info-value">${visit.client?.email || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'العنوان' : 'Address'}</div>
+              <div class="info-value">${visit.client?.address || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'نوع النشاط' : 'Business Type'}</div>
+              <div class="info-value">${visit.client?.business_type ? (isRTL ? visit.client.business_type.name_ar : visit.client.business_type.name_en) : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">${isRTL ? 'تفاصيل الزيارة' : 'Visit Details'}</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'تاريخ الزيارة' : 'Visit Date'}</div>
+              <div class="info-value">${new Date(visit.visit_date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'نوع الزيارة' : 'Visit Type'}</div>
+              <div class="info-value">${visit.visit_type || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'نتيجة الزيارة' : 'Visit Result'}</div>
+              <div class="info-value">${visit.visit_result || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'سبب الزيارة' : 'Visit Reason'}</div>
+              <div class="info-value">${visit.visit_reason || '-'}</div>
+            </div>
+            ${visit.follow_up_date ? `
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'تاريخ المتابعة' : 'Follow-up Date'}</div>
+              <div class="info-value">${new Date(visit.follow_up_date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</div>
+            </div>
+            ` : ''}
+            ${visit.location_lat && visit.location_lng ? `
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'الموقع الجغرافي' : 'GPS Location'}</div>
+              <div class="info-value">${visit.location_lat}, ${visit.location_lng}</div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+
+        ${visit.rep_notes ? `
+        <div class="section">
+          <div class="section-title">${isRTL ? 'ملاحظات المندوب' : 'Sales Rep Notes'}</div>
+          <div class="info-value">${visit.rep_notes}</div>
+        </div>
+        ` : ''}
+
+        ${visit.admin_notes ? `
+        <div class="section">
+          <div class="section-title">${isRTL ? 'ملاحظات الإدارة' : 'Admin Notes'}</div>
+          <div class="info-value">${visit.admin_notes}</div>
+        </div>
+        ` : ''}
+
+        <div class="section">
+          <div class="section-title">${isRTL ? 'معلومات المندوب' : 'Sales Representative'}</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'الاسم' : 'Name'}</div>
+              <div class="info-value">${visit.rep?.name || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">${isRTL ? 'البريد الإلكتروني' : 'Email'}</div>
+              <div class="info-value">${visit.rep?.email || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(content);
+    printWindow.document.close();
+  };
   
   const availableStatuses = [
     { value: 'draft', label: t('draft') || 'Draft' },
     { value: 'submitted', label: t('submitted') || 'Submitted' },
-    { value: 'pending_review', label: t('pending_review') || 'Pending Review' },
-    { value: 'action_required', label: t('action_required') || 'Action Required' },
-    { value: 'approved', label: t('approved') || 'Approved' },
-    { value: 'quotation_sent', label: t('quotation_sent') || 'Quotation Sent' },
-    { value: 'closed_won', label: t('closed_won') || 'Closed Won' },
-    { value: 'closed_lost', label: t('closed_lost') || 'Closed Lost' },
+    { value: 'completed', label: isRTL ? 'مكتملة' : 'Completed' },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
       case 'submitted': return 'bg-blue-100 text-blue-800';
-      case 'pending_review': return 'bg-yellow-100 text-yellow-800';
-      case 'action_required': return 'bg-orange-100 text-orange-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'quotation_sent': return 'bg-purple-100 text-purple-800';
-      case 'closed_won': return 'bg-green-600 text-white';
-      case 'closed_lost': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'approved':
-      case 'closed_won':
+      case 'completed':
         return <CheckCircle className="w-4 h-4" />;
-      case 'pending_review':
-      case 'action_required':
+      case 'submitted':
         return <Clock className="w-4 h-4" />;
-      case 'closed_lost':
-        return <XCircle className="w-4 h-4" />;
       default:
         return null;
     }
@@ -118,16 +268,26 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
           <h2 className="text-xl font-bold">{isRTL ? 'تفاصيل الزيارة' : 'Visit Details'}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors flex items-center gap-2"
+              title={isRTL ? 'تحميل وطباعة' : 'Download & Print'}
+            >
+              <Download className="w-5 h-5" />
+              <span className="hidden sm:inline text-sm">{isRTL ? 'طباعة' : 'Print'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div ref={contentRef} className="p-6 overflow-y-auto flex-1">
           {/* Status Badge */}
           <div className="mb-6">
             <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(visit.status)}`}>
@@ -199,124 +359,65 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
             </div>
           </div>
 
-          {/* Agency & Voiceover */}
-          {(visit.has_previous_agency || visit.needs_voiceover) && (
+          {/* Visit Details */}
+          {(visit.visit_type || visit.visit_result || visit.visit_reason) && (
             <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
               <h3 className="text-lg font-bold mb-3 text-purple-900">
-                {isRTL ? 'معلومات إضافية' : 'Additional Information'}
+                {isRTL ? 'تفاصيل الزيارة' : 'Visit Details'}
               </h3>
-              {visit.has_previous_agency && (
-                <div className="mb-3">
-                  <span className="font-semibold text-gray-700">{isRTL ? 'وكالة سابقة:' : 'Previous Agency:'}</span>
-                  <p className="text-gray-900">{visit.previous_agency_name || 'Yes'}</p>
-                </div>
-              )}
-              {visit.needs_voiceover && (
-                <div>
-                  <span className="font-semibold text-gray-700">{isRTL ? 'يحتاج تعليق صوتي:' : 'Needs Voiceover:'}</span>
-                  <p className="text-gray-900">{visit.voiceover_language || 'Yes'}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Shooting Goals */}
-          {visit.shooting_goals && (Array.isArray(visit.shooting_goals) ? visit.shooting_goals.length > 0 : visit.shooting_goals) && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3 text-gray-900">{isRTL ? 'أهداف التصوير' : 'Shooting Goals'}</h3>
-              <div className="flex flex-wrap gap-2">
-                {(Array.isArray(visit.shooting_goals) ? visit.shooting_goals : JSON.parse(visit.shooting_goals as string)).map((goal: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                    {goal.replace(/_/g, ' ')}
-                  </span>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {visit.visit_type && (
+                  <div>
+                    <span className="font-semibold text-gray-700">{isRTL ? 'نوع الزيارة:' : 'Visit Type:'}</span>
+                    <p className="text-gray-900 capitalize">{visit.visit_type.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {visit.visit_result && (
+                  <div>
+                    <span className="font-semibold text-gray-700">{isRTL ? 'نتيجة الزيارة:' : 'Visit Result:'}</span>
+                    <p className="text-gray-900 capitalize">{visit.visit_result.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {visit.visit_reason && (
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-gray-700">{isRTL ? 'سبب الزيارة:' : 'Visit Reason:'}</span>
+                    <p className="text-gray-900 capitalize">{visit.visit_reason.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
               </div>
-              {visit.shooting_goals_other_text && (
-                <p className="mt-2 text-sm text-gray-600">{visit.shooting_goals_other_text}</p>
-              )}
             </div>
           )}
 
-          {/* Service Types */}
-          {visit.service_types && (Array.isArray(visit.service_types) ? visit.service_types.length > 0 : visit.service_types) && (
-            <div className="mb-6">
-              <h3 className="text-lg font-bold mb-3 text-gray-900">{isRTL ? 'أنواع الخدمات' : 'Service Types'}</h3>
-              <div className="flex flex-wrap gap-2">
-                {(Array.isArray(visit.service_types) ? visit.service_types : JSON.parse(visit.service_types as string)).map((service: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                    {service.replace(/_/g, ' ')}
-                  </span>
-                ))}
-              </div>
-              {visit.service_types_other_text && (
-                <p className="mt-2 text-sm text-gray-600">{visit.service_types_other_text}</p>
-              )}
-            </div>
-          )}
-
-          {/* Product Details */}
-          <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-green-900">
-              <Package className="w-5 h-5" />
-              {isRTL ? 'تفاصيل المنتج' : 'Product Details'}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              {visit.product_category && (
-                <div>
-                  <span className="font-semibold text-gray-700">{isRTL ? 'فئة المنتج:' : 'Product Category:'}</span>
-                  <p className="text-gray-900">
-                    {isRTL ? visit.product_category.name_ar : visit.product_category.name_en}
-                  </p>
-                </div>
-              )}
-              {visit.estimated_product_count && (
-                <div>
-                  <span className="font-semibold text-gray-700">{isRTL ? 'عدد المنتجات:' : 'Product Count:'}</span>
-                  <p className="text-gray-900">{visit.estimated_product_count}</p>
-                </div>
-              )}
-              {visit.product_description && (
-                <div className="md:col-span-2">
-                  <span className="font-semibold text-gray-700">{isRTL ? 'وصف المنتج:' : 'Description:'}</span>
-                  <p className="text-gray-900">{visit.product_description}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Location & Budget */}
+          {/* Location & Follow-up */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {visit.preferred_location && (
+            {(visit.location_lat && visit.location_lng) && (
               <div className="p-4 bg-orange-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-5 h-5 text-orange-600" />
-                  <span className="font-semibold text-gray-700">{isRTL ? 'الموقع المفضل' : 'Preferred Location'}</span>
+                  <span className="font-semibold text-gray-700">{isRTL ? 'الموقع الجغرافي' : 'GPS Location'}</span>
                 </div>
-                <p className="text-gray-900">{visit.preferred_location.replace(/_/g, ' ')}</p>
+                <p className="text-gray-900 text-sm">{visit.location_lat}, {visit.location_lng}</p>
+                <a 
+                  href={`https://www.google.com/maps?q=${visit.location_lat},${visit.location_lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-block"
+                >
+                  {isRTL ? 'عرض على الخريطة' : 'View on Map'}
+                </a>
               </div>
             )}
 
-            {visit.budget_range && (
-              <div className="p-4 bg-yellow-50 rounded-lg">
+            {visit.follow_up_date && (
+              <div className="p-4 bg-pink-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-5 h-5 text-yellow-600" />
-                  <span className="font-semibold text-gray-700">{isRTL ? 'نطاق الميزانية' : 'Budget Range'}</span>
+                  <Calendar className="w-5 h-5 text-pink-600" />
+                  <span className="font-semibold text-gray-700">{isRTL ? 'تاريخ المتابعة' : 'Follow-up Date'}</span>
                 </div>
-                <p className="text-gray-900">{visit.budget_range}</p>
+                <p className="text-gray-900">{new Date(visit.follow_up_date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</p>
               </div>
             )}
           </div>
-
-          {/* Preferred Shoot Date */}
-          {visit.preferred_shoot_date && (
-            <div className="mb-6 p-4 bg-pink-50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-5 h-5 text-pink-600" />
-                <span className="font-semibold text-gray-700">{isRTL ? 'تاريخ التصوير المفضل' : 'Preferred Shoot Date'}</span>
-              </div>
-              <p className="text-gray-900">{new Date(visit.preferred_shoot_date).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US')}</p>
-            </div>
-          )}
 
           {/* Notes */}
           {(visit.rep_notes || visit.admin_notes) && (
@@ -445,17 +546,11 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
                     <CheckCircle className="w-5 h-5" />
                     {isRTL ? 'تحديث الحالة' : 'Update Status'}
                   </button>
-                ) : (
-                  visit.status === 'closed_won' || visit.status === 'closed_lost' ? (
-                    <span className="text-sm text-gray-500 italic">
-                      {isRTL ? 'لا يمكن تحديث الزيارات المغلقة' : 'Closed visits cannot be updated'}
-                    </span>
-                  ) : !currentUser ? (
-                    <span className="text-sm text-red-500">
-                      {isRTL ? 'خطأ: لم يتم العثور على معلومات المستخدم' : 'Error: User information not found'}
-                    </span>
-                  ) : null
-                )}
+                ) : !currentUser ? (
+                  <span className="text-sm text-red-500">
+                    {isRTL ? 'خطأ: لم يتم العثور على معلومات المستخدم' : 'Error: User information not found'}
+                  </span>
+                ) : null}
               </div>
               <button
                 onClick={onClose}

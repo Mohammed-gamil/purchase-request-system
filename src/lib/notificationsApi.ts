@@ -12,25 +12,33 @@ export interface NotificationItem {
 }
 
 export const notificationsApi = {
-  async list(params?: { page?: number; per_page?: number }): Promise<{ items: NotificationItem[]; pagination: { total: number; page: number; per_page: number } }>{
-    const res = await apiClient.get<{ items: NotificationItem[]; pagination: { total: number; page: number; per_page: number } }>(
-      "/notifications",
-      params
-    );
-    return res.data!;
+  async list(params?: { page?: number; per_page?: number }){
+    // Backend returns { success: true, data: [...], meta: { pagination: { total, page, per_page, totalPages } } }
+    const res = await apiClient.get<any>("/notifications", params);
+    const items: NotificationItem[] = res.data ?? [];
+    const pagination = res.meta?.pagination ? {
+      total: res.meta.pagination.total ?? 0,
+      page: res.meta.pagination.page ?? res.meta.pagination.current_page ?? 1,
+      per_page: res.meta.pagination.per_page ?? res.meta.pagination.perPage ?? 20,
+    } : { total: 0, page: 1, per_page: 20 };
+
+    return { items, pagination };
   },
 
   async unreadCount(): Promise<number> {
-    const res = await apiClient.get<{ unread: number }>("/notifications/unread-count");
-    return res.data!.unread;
+    // Backend returns { success: true, data: { count: N } }
+    const res = await apiClient.get<any>("/notifications/unread-count");
+    return res.data?.count ?? res.data?.unread ?? 0;
   },
 
   async markAsRead(id: string) {
-    await apiClient.post(`/notifications/${id}/read`, {});
+    // API route expects PUT {id}/read
+    await apiClient.put(`/notifications/${id}/read`, {});
   },
 
   async markAllAsRead() {
-    await apiClient.post(`/notifications/mark-all-read`, {});
+    // API route expects PUT read-all
+    await apiClient.put(`/notifications/read-all`, {});
   },
 
   async delete(id: string) {

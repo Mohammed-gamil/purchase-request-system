@@ -1,8 +1,10 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { authService } from "@/lib/auth";
 import { approvalsApi, requestsApi, adminApi, apiClient, notificationsApi } from "@/lib/api";
 import InventoryManagement from "@/pages/InventoryManagement";
 import SalesVisitManagement from "@/pages/SalesVisitManagement";
+import InventoryRequestManagement from "@/pages/InventoryRequestManagement";
+import StudioBookingManagement from "@/pages/StudioBookingManagement";
 import {
   Plus,
   FileText,
@@ -25,6 +27,8 @@ import {
   Activity,
   ChevronDown,
   FileSpreadsheet,
+  Package,
+  Camera,
 } from "lucide-react";
 
 // Single-file SPA for Purchase Requests styled like an email client
@@ -304,7 +308,7 @@ const i18n: Record<Language, Record<string, string>> = {
     updateFailed: "Failed to update status",
     notesAdded: "Notes added successfully",
     requester: "Requester",
-    submitted: "Submitted",
+    submittedDate: "Submitted",
     status: "Status",
     details: "Details",
     information: "Information",
@@ -466,7 +470,7 @@ const i18n: Record<Language, Record<string, string>> = {
     itemCreated: "Item created",
     itemUpdated: "Item updated",
     createFailed: "Create failed",
-    updateFailed: "Update failed",
+    itemUpdateFailed: "Update failed",
     selectCategory: "Select Category",
     customCategory: "Custom Category",
     enterCustomCategory: "Enter custom category",
@@ -549,7 +553,7 @@ const i18n: Record<Language, Record<string, string>> = {
     updateFailed: "فشل تحديث الحالة",
     notesAdded: "تمت إضافة الملاحظات بنجاح",
     requester: "مُقدِّم الطلب",
-    submitted: "تاريخ التقديم",
+    submittedDate: "تاريخ التقديم",
     status: "الحالة",
     details: "التفاصيل",
     information: "المعلومات",
@@ -715,7 +719,7 @@ const i18n: Record<Language, Record<string, string>> = {
     itemCreated: "تم إنشاء العنصر",
     itemUpdated: "تم تحديث العنصر",
     createFailed: "فشل الإنشاء",
-    updateFailed: "فشل التحديث",
+    itemUpdateFailed: "فشل التحديث",
     selectCategory: "اختر الفئة",
     customCategory: "فئة مخصصة",
     enterCustomCategory: "أدخل فئة مخصصة",
@@ -1463,8 +1467,8 @@ function RequestDetailView({
   return (
     <div className="space-y-6">
       {/* Information card */}
-  <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+  <section className="rounded-xl border border-border bg-card/90 p-3 md:p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           {lang === 'ar' ? (
             <>
               <span className={clsx("rounded-full px-2 py-0.5 text-xs font-semibold ring-1", statusBadgeColor(pr.status))}>{pr.status}</span>
@@ -1555,23 +1559,23 @@ function RequestDetailView({
           <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">{t("description")}</div>
           <p className="text-sm leading-6 text-foreground">{pr.description}</p>
         </div>
-        <div className="mt-4">
+        <div className="mt-3 md:mt-4">
           <div className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">{t("items")}</div>
-          <div className="overflow-hidden rounded-lg border border-border shadow-sm">
+          <div className="overflow-x-auto overflow-hidden rounded-lg border border-border shadow-sm">
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-gradient-to-r from-primary/10 via-warning/10 to-primary/10">
                 <tr>
-                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("item")}</th>
-                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("quantity")}</th>
-                  <th className="px-3 py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("estimatedCost")}</th>
+                  <th className="px-2 md:px-3 py-2 md:py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("item")}</th>
+                  <th className="px-2 md:px-3 py-2 md:py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("quantity")}</th>
+                  <th className="px-2 md:px-3 py-2 md:py-3 text-start text-xs md:text-sm font-bold uppercase tracking-wider text-primary">{t("estimatedCost")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
                 {pr.items.map((it, idx) => (
                   <tr key={idx} className="hover:bg-secondary/30 transition-colors">
-                    <td className="px-3 py-2 text-sm font-semibold text-foreground">{it.name}</td>
-                    <td className="px-3 py-2 text-sm font-semibold text-foreground">{it.quantity}</td>
-                    <td className="px-3 py-2 text-sm font-bold text-warning">{formatCurrency(it.estimatedCost, lang)}</td>
+                    <td className="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-foreground">{it.name}</td>
+                    <td className="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-foreground">{it.quantity}</td>
+                    <td className="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-bold text-warning">{formatCurrency(it.estimatedCost, lang)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1582,9 +1586,9 @@ function RequestDetailView({
 
       
 
-  <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-primary">{t("workflowHistory")}</h2>
-        <ol className="mt-4 space-y-3">
+  <section className="rounded-xl border border-border bg-card/90 p-3 md:p-4 lg:p-5 shadow-sm">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-bold tracking-tight text-primary">{t("workflowHistory")}</h2>
+        <ol className="mt-3 md:mt-4 space-y-2 md:space-y-3">
           <li className="text-sm">
             • {t("createdBy")} {pr.requester} — {new Date(pr.submittedDate).toLocaleString(lang === "ar" ? "ar-EG" : "en-US")}
           </li>
@@ -1643,39 +1647,39 @@ function RequestDetailView({
       </section>
 
           {/* Quotes section visible to everyone */}
-  <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("quotes")}</h2>
+  <section className="rounded-xl border border-border bg-card/90 p-3 md:p-4 lg:p-5 shadow-sm">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{t("quotes")}</h2>
          {(!pr.quotes || pr.quotes.length === 0) ? (
            <p className="mt-2 text-sm text-subtext">{t("noQuotesYet")}</p>
          ) : (
-           <div className="mt-3 overflow-hidden rounded-lg border border-border">
+           <div className="mt-2 md:mt-3 overflow-x-auto overflow-hidden rounded-lg border border-border">
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-warning/20">
                  <tr>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Vendor</th>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Total</th>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">File</th>
-                  <th className="px-3 py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Select</th>
+                  <th className="px-2 md:px-3 py-1.5 md:py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Vendor</th>
+                  <th className="px-2 md:px-3 py-1.5 md:py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Total</th>
+                  <th className="px-2 md:px-3 py-1.5 md:py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">File</th>
+                  <th className="px-2 md:px-3 py-1.5 md:py-2 text-start text-xs md:text-sm font-semibold uppercase tracking-wider text-foreground">Select</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-border bg-card/90">
                 {pr.quotes?.map((q) => (
-                  <tr key={String(q.id)} className="text-sm">
-                    <td className="px-3 py-2">{q.vendorName}</td>
-                    <td className="px-3 py-2">{formatCurrency(q.quoteTotal, lang)}</td>
-                    <td className="px-3 py-2">
+                  <tr key={String(q.id)} className="text-xs md:text-sm">
+                    <td className="px-2 md:px-3 py-1.5 md:py-2">{q.vendorName}</td>
+                    <td className="px-2 md:px-3 py-1.5 md:py-2">{formatCurrency(q.quoteTotal, lang)}</td>
+                    <td className="px-2 md:px-3 py-1.5 md:py-2">
                       {q.fileUrl ? (
                         <a href={q.fileUrl} target="_blank" className="text-primary hover:underline">View</a>
                       ) : (
                         <span className="text-subtext">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-2 md:px-3 py-1.5 md:py-2">
                       <button
                         disabled={!isFinalManager || busy === "selectQuote" || pr.rawState !== 'DM_APPROVED'}
                         onClick={() => handleSelectQuote(q.id)}
                         className={clsx(
-                          "rounded-md border px-2 py-1 text-xs",
+                          "rounded-md border px-1.5 md:px-2 py-0.5 md:py-1 text-xs",
                           pr.selectedQuoteId === q.id ? "bg-warning text-warning-foreground border-warning" : "border-border hover:bg-secondary"
                         )}
                       >
@@ -1691,7 +1695,7 @@ function RequestDetailView({
 
         {canAccountantAddQuotes && (
           <div className="mt-4 space-y-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2 md:gap-3 md:grid-cols-2 lg:grid-cols-4">
               <input
                 placeholder="Vendor name"
                 value={newQuoteVendor}
@@ -1743,9 +1747,9 @@ function RequestDetailView({
 
       
 
-  <section className="rounded-xl border border-border bg-card/90 p-4 md:p-5 shadow-sm">
-  <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("actions")}</h2>
-        <div className="mt-4 space-y-3">
+  <section className="rounded-xl border border-border bg-card/90 p-3 md:p-4 lg:p-5 shadow-sm">
+  <h2 className="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{t("actions")}</h2>
+        <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
           {isAdmin && (
             <div className="flex">
               <button
@@ -1757,11 +1761,11 @@ function RequestDetailView({
             </div>
           )}
           {canDMAct && (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2 md:gap-3 sm:flex-row sm:items-center">
               <button
                 onClick={handleApprove}
                 disabled={busy === "approve"}
-                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-3 md:px-4 py-1.5 md:py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {busy === "approve" ? "..." : t("approve")}
               </button>
@@ -1770,13 +1774,13 @@ function RequestDetailView({
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("rejectionReason")}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+                  className="w-full rounded-lg border border-border bg-background px-2 md:px-3 py-1.5 md:py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
                 />
               </div>
               <button
                 onClick={handleReject}
                 disabled={!reason.trim() || busy === "reject"}
-                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="inline-flex items-center justify-center rounded-lg bg-red-600 px-3 md:px-4 py-1.5 md:py-2 text-sm font-semibold text-white shadow-md hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {busy === "reject" ? "..." : t("reject")}
               </button>
@@ -1829,10 +1833,10 @@ function RequestDetailView({
           )}
 
           {canRequesterMarkDone && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={() => onMarkProjectDone(pr.id)}
-                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-3 md:px-4 py-1.5 md:py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('markProjectDone')}
               </button>
@@ -1840,10 +1844,10 @@ function RequestDetailView({
           )}
 
           {canAccountantConfirmPaid && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={() => onConfirmClientPaid(pr.id)}
-                className="inline-flex items-center justify-center rounded-lg bg-warning px-4 py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                className="inline-flex items-center justify-center rounded-lg bg-warning px-3 md:px-4 py-1.5 md:py-2 text-sm font-semibold text-warning-foreground shadow-md hover:bg-warning/90 transition-all duration-200 hover:scale-105 hover:shadow-lg"
               >
                 {t('confirmClientPaid')}
               </button>
@@ -1928,27 +1932,27 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card/90 p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
+    <section className="rounded-xl border border-border bg-card/90 p-3 md:p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-2 md:gap-3">
         {lang === 'ar' ? (
           <>
             <button
               type="button"
               onClick={refresh}
-              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 md:gap-2 rounded-md border border-border px-2 md:px-3 py-1 md:py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
               disabled={isLoading}
             >
               {t('refresh')}
             </button>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
           </>
         ) : (
           <>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{t("discussionComments")}</h2>
             <button
               type="button"
               onClick={refresh}
-              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 md:gap-2 rounded-md border border-border px-2 md:px-3 py-1 md:py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
               disabled={isLoading}
             >
               {t('refresh')}
@@ -1956,7 +1960,7 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
           </>
         )}
       </div>
-      <div className="mt-3 space-y-3 max-h-[70vh] overflow-auto">
+      <div className="mt-2 md:mt-3 space-y-2 md:space-y-3 max-h-[50vh] md:max-h-[70vh] overflow-auto">
         {isLoading ? (
           <div className="space-y-2">
             <div className="h-4 w-1/3 animate-pulse rounded bg-secondary" />
@@ -1978,10 +1982,10 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
           <p className="text-sm text-subtext">{t("noCommentsYet")}</p>
         ) : (
           sorted.map((c) => (
-            <div key={c.id} className="rounded-md border border-border bg-background p-3">
+            <div key={c.id} className="rounded-md border border-border bg-background p-2 md:p-3">
               <div className="flex items-center justify-between text-xs text-subtext">
-                <div className="flex items-center gap-2">
-                  <div className="grid h-6 w-6 place-items-center rounded-full bg-warning/20 text-[10px] font-bold text-warning-foreground">
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <div className="grid h-5 w-5 md:h-6 md:w-6 place-items-center rounded-full bg-warning/20 text-[9px] md:text-[10px] font-bold text-warning-foreground">
                     {(c.author || ("User #" + c.author_id)).toString().trim().slice(0,2).toUpperCase()}
                   </div>
                   <span className="font-medium">{c.author || 'User #' + c.author_id}</span>
@@ -1993,18 +1997,18 @@ function CommentsPanel({ prId, lang, t }: { prId: string; lang: Language; t: (k:
           ))
         )}
       </div>
-      <div className="mt-4">
-        <label className="mb-2 block text-sm font-bold text-primary">{t("writeComment")}</label>
+      <div className="mt-3 md:mt-4">
+        <label className="mb-1.5 md:mb-2 block text-sm font-bold text-primary">{t("writeComment")}</label>
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          rows={4}
+          rows={3}
           placeholder="Share your thoughts or feedback..."
           onKeyDown={onKey}
-          className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+          className="w-full rounded-lg border-2 border-border bg-background px-3 md:px-4 py-2 md:py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
           aria-label={t('writeComment')}
         />
-        <div className="mt-3 flex justify-between items-center">
+        <div className="mt-2 md:mt-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0">
           <div className="text-xs text-subtext font-medium">
             <span className="inline-flex items-center gap-1">
               <kbd className="px-2 py-1 text-xs font-semibold bg-secondary rounded border border-border">Ctrl</kbd>
@@ -2165,12 +2169,12 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
          </div>
         <div className="mt-4 space-y-3">
           {items.map((it, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-3 p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
+            <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 p-2 md:p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
               <input
                 placeholder="Item name (e.g., Laptop, Office Chair)"
                 value={it.name}
                 onChange={(e) => updateItem(idx, { name: e.target.value })}
-                className="col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+                className="md:col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
               <input
                 type="number"
@@ -2178,9 +2182,9 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
                 placeholder="Qty"
                 value={it.quantity}
                 onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) || 0 })}
-                className="col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+                className="md:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
-              <div className="col-span-4 relative">
+              <div className="md:col-span-4 relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-subtext">SAR</span>
                 <input
                   type="number"
@@ -2192,15 +2196,15 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
                   className="w-full rounded-lg border border-border bg-background pl-12 pr-3 py-2 text-sm font-bold shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
                 />
               </div>
-              <div className="col-span-1 flex items-center justify-end">
-                <button type="button" onClick={() => removeItem(idx)} className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
+              <div className="md:col-span-1 flex items-center justify-end">
+                <button type="button" onClick={() => removeItem(idx)} className="w-full md:w-auto rounded-lg border border-red-200 bg-red-50 px-3 md:px-2 py-1.5 md:py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
                   ×
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-warning/10 to-primary/10 border border-warning/30">
+        <div className="mt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-0 p-3 md:p-4 rounded-lg bg-gradient-to-r from-warning/10 to-primary/10 border border-warning/30">
           <div className="text-sm font-bold text-primary uppercase tracking-wide">{t("totalEstimatedCost")}</div>
           <div className="text-xl font-bold text-warning">{formatCurrency(total, lang)}</div>
         </div>
@@ -2260,6 +2264,11 @@ function ProjectCreateForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientName, setClientName] = useState("");
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [allClients, setAllClients] = useState<any[]>([]);
+  const [filteredClients, setFilteredClients] = useState<any[]>([]);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [location, setLocation] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -2298,10 +2307,45 @@ function ProjectCreateForm({
     return () => { mounted = false; };
   }, []);
 
+  // Load all clients
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiClient.get('/visits/clients', { per_page: 1000 });
+        const data = res.data || [];
+        if (mounted) {
+          setAllClients(data);
+          setFilteredClients(data);
+        }
+      } catch (e) {
+        console.error('Failed to load clients:', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Filter clients based on search
+  useEffect(() => {
+    if (clientSearch.trim() === '') {
+      setFilteredClients(allClients);
+    } else {
+      const search = clientSearch.toLowerCase();
+      const filtered = allClients.filter((client: any) => 
+        client.store_name?.toLowerCase().includes(search) ||
+        client.contact_person?.toLowerCase().includes(search) ||
+        client.mobile?.includes(search)
+      );
+      setFilteredClients(filtered);
+    }
+  }, [clientSearch, allClients]);
+
   function validate(): boolean {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = "Required";
-    if (!clientName.trim()) errs.clientName = "Required";
+    // Allow either selected client or manually typed client name
+    const finalClientName = selectedClient ? selectedClient.store_name : clientSearch.trim();
+    if (!finalClientName) errs.clientName = "Required";
     if (!location.trim()) errs.location = "Required";
     if (!startTime) errs.startTime = "Required";
     if (!endTime) errs.endTime = "Required";
@@ -2330,10 +2374,12 @@ function ProjectCreateForm({
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    // Use selected client name or manually typed name
+    const finalClientName = selectedClient ? selectedClient.store_name : clientSearch.trim();
     await onSubmit({
       title: title.trim(),
       description: description.trim(),
-      clientName: clientName.trim(),
+      clientName: finalClientName,
       location: location.trim(),
       startTime,
       endTime,
@@ -2366,11 +2412,83 @@ function ProjectCreateForm({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-subtext">{t("clientName")}</label>
-            <input
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className={clsx("w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20", errors.clientName && "border-red-500")}
-            />
+            {selectedClient ? (
+              <div className="flex items-center justify-between px-3 py-2 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">{selectedClient.store_name}</div>
+                  <div className="text-xs text-gray-600">{selectedClient.contact_person} • {selectedClient.mobile}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClient(null);
+                    setClientName('');
+                    setClientSearch('');
+                    setShowClientDropdown(true);
+                  }}
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                >
+                  {t('change') || 'Change'}
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" style={{zIndex: 1}} />
+                  <input
+                    value={clientSearch}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    placeholder={lang === 'ar' ? 'ابحث عن عميل أو اكتب اسم جديد...' : 'Search client or type new name...'}
+                    className={clsx("w-full pl-10 pr-3 py-2 rounded-md border bg-background text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20", errors.clientName && "border-red-500")}
+                    autoComplete="off"
+                  />
+                </div>
+                
+                {showClientDropdown && filteredClients.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full border rounded-lg shadow-lg bg-white max-h-60 overflow-y-auto">
+                    <div className="sticky top-0 bg-gray-50 px-3 py-2 border-b flex justify-between items-center">
+                      <span className="text-xs font-semibold text-gray-600">
+                        {filteredClients.length} {lang === 'ar' ? 'عميل' : 'client(s)'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowClientDropdown(false)}
+                        className="text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        {lang === 'ar' ? 'إغلاق' : 'Close'}
+                      </button>
+                    </div>
+                    {filteredClients.map((client: any) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClient(client);
+                          setClientName(client.store_name);
+                          setShowClientDropdown(false);
+                          setClientSearch('');
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b last:border-b-0 transition-colors"
+                      >
+                        <div className="font-semibold text-sm text-gray-900">{client.store_name}</div>
+                        <div className="text-xs text-gray-600 mt-0.5">
+                          {client.contact_person} • {client.mobile}
+                        </div>
+                        {client.business_type && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {lang === 'ar' ? client.business_type.name_ar : client.business_type.name_en}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-subtext">{t("description")}</label>
@@ -2692,6 +2810,19 @@ const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [adminUsers, setAdminUsers] = useState<Array<any>>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    password: 'password123',
+    role: 'USER',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    position: ''
+  });
+  const [newUserErrors, setNewUserErrors] = useState<Record<string, string[]>>({});
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<"all" | "my" | "pending" | "thisWeek">("all");
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
@@ -3143,6 +3274,81 @@ const App: React.FC = () => {
     }
   }
 
+  async function handleCreateUser() {
+    // Trim inputs
+    const payload = {
+      ...newUserData,
+      name: (newUserData.name || '').trim(),
+      email: (newUserData.email || '').trim(),
+      password: String(newUserData.password || '').trim(),
+      first_name: (newUserData.first_name || '').trim(),
+      last_name: (newUserData.last_name || '').trim(),
+      phone: (newUserData.phone || '').trim(),
+      position: (newUserData.position || '').trim(),
+    };
+
+    // Clear previous errors
+    setNewUserErrors({});
+
+    // Basic client-side validation - accumulate errors
+    const errors: Record<string, string[]> = {};
+    if (!payload.name) errors.name = [language === 'ar' ? 'الاسم مطلوب' : 'Name is required'];
+    if (!payload.email) errors.email = [language === 'ar' ? 'البريد الإلكتروني مطلوب' : 'Email is required'];
+
+    // Email format validation
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (payload.email && !emailRe.test(payload.email)) {
+      errors.email = [...(errors.email || []), language === 'ar' ? 'يرجى إدخال بريد إلكتروني صالح' : 'Please enter a valid email address'];
+    }
+
+    // Password minimum length (backend requires min 6)
+    if (!payload.password || payload.password.length < 6) {
+      errors.password = [language === 'ar' ? 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل' : 'Password must be at least 6 characters'];
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setNewUserErrors(errors);
+      return;
+    }
+
+    try {
+      setIsCreatingUser(true);
+      const res = await adminApi.createUser(payload);
+      if (res && (res.success || res.data)) {
+        // success
+        setNewUserErrors({});
+        addToast('success', language === 'ar' ? 'تم إنشاء المستخدم بنجاح' : 'User created successfully');
+        setShowAddUserDialog(false);
+        setNewUserData({
+          name: '',
+          email: '',
+          password: 'password123',
+          role: 'USER',
+          first_name: '',
+          last_name: '',
+          phone: '',
+          position: ''
+        });
+        await handleRefreshUsers();
+      } else {
+        addToast('error', language === 'ar' ? 'فشل إنشاء المستخدم' : 'Failed to create user');
+      }
+    } catch (e: any) {
+      console.error('Failed to create user', e);
+      // Laravel validation errors may come in response.data.errors, but our apiClient wraps errors
+      const validationErrors = e?.response?.data?.errors;
+      if (validationErrors && typeof validationErrors === 'object') {
+        // Map backend validation errors to newUserErrors to display inline
+        setNewUserErrors(validationErrors as Record<string, string[]>);
+      } else {
+        const backendMsg = e?.response?.data?.message || e?.message || (language === 'ar' ? 'فشل إنشاء المستخدم' : 'Failed to create user');
+        addToast('error', backendMsg);
+      }
+    } finally {
+      setIsCreatingUser(false);
+    }
+  }
+
   // Notification functions
   async function loadNotifications() {
     try {
@@ -3343,14 +3549,14 @@ const App: React.FC = () => {
       {/* Notification Panel Overlay */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 bg-background/90 z-[9998]"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998]"
           onClick={() => setShowNotifications(false)}
         />
       )}
 
       {/* Notification Panel */}
       {showNotifications && (
-        <div className="fixed top-0 right-0 h-full bg-card shadow-2xl transition-all duration-300 z-[9999] w-80 overflow-hidden border-l border-border animate-in slide-in-from-right">
+        <div className="fixed top-0 right-0 h-full bg-card shadow-2xl transition-all duration-300 z-[9999] w-80 overflow-hidden border-l border-border animate-in slide-in-from-right" style={{ backgroundColor: 'var(--card)' }}>
           <div className="flex flex-col h-full">
           {/* Header */}
           <div className="border-b border-border bg-gradient-to-r from-primary/10 to-warning/10 p-4">
@@ -3736,6 +3942,54 @@ const App: React.FC = () => {
             </button>
           )}
 
+          {currentUser.apiRole !== "SALES_REP" && (
+            <button
+              onClick={() => {
+                setSection("inventory-requests");
+                setView("detail");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                section === "inventory-requests" 
+                  ? clsx(
+                      "bg-orange-500/20 text-orange-500",
+                      language === "ar" ? "border-r-4 border-orange-500" : "border-l-4 border-orange-500"
+                    )
+                  : "hover:bg-secondary text-foreground"
+              )}
+              title={language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}
+            >
+              <Package className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}</span>}
+              {sidebarOpen && section === "inventory-requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+            </button>
+          )}
+
+          {currentUser.apiRole !== "SALES_REP" && (
+            <button
+              onClick={() => {
+                setSection("studio-bookings");
+                setView("detail");
+              }}
+              className={clsx(
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                language === "ar" && "flex-row-reverse",
+                section === "studio-bookings" 
+                  ? clsx(
+                      "bg-indigo-500/20 text-indigo-500",
+                      language === "ar" ? "border-r-4 border-indigo-500" : "border-l-4 border-indigo-500"
+                    )
+                  : "hover:bg-secondary text-foreground"
+              )}
+              title={language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}
+            >
+              <Camera className="h-5 w-5 shrink-0" />
+              {sidebarOpen && <span>{language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}</span>}
+              {sidebarOpen && section === "studio-bookings" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+            </button>
+          )}
+
           {(currentUser.apiRole === "ADMIN" || currentUser.apiRole === "SUPER_ADMIN" || currentUser.apiRole === "SALES_REP" || currentUser.role === "manager" || currentUser.role === "sales") && (
             <button
               onClick={() => {
@@ -3861,13 +4115,13 @@ const App: React.FC = () => {
       <div 
         className="flex-1 transition-all duration-300 min-h-screen"
         style={language === "ar" 
-          ? (sidebarOpen ? { marginRight: '16rem' } : { marginRight: '4rem' })
-          : (sidebarOpen ? { marginLeft: '16rem' } : { marginLeft: '4rem' })
+          ? (sidebarOpen ? { marginRight: window.innerWidth >= 768 ? '18rem' : '16rem' } : { marginRight: window.innerWidth >= 768 ? '5rem' : '4rem' })
+          : (sidebarOpen ? { marginLeft: window.innerWidth >= 768 ? '18rem' : '16rem' } : { marginLeft: window.innerWidth >= 768 ? '5rem' : '4rem' })
         }
       >
         {/* Top Navbar - Simplified */}
         <div className="sticky top-0 z-40 backdrop-blur-sm bg-card/80 border-b border-border shadow-sm">
-          <div className="px-4 sm:px-6 lg:px-8 py-3">
+          <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-2 md:py-3">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold">
                 {section === "inventory" ? t("inventoryManagement") : section === "admin" ? t("adminPanel") : section === "sales-visits" ? t("salesVisits") : t("requests")}
@@ -3882,10 +4136,10 @@ const App: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <main className="px-4 sm:px-6 lg:px-8 pb-10 pt-4">
+        <main className="px-3 sm:px-4 md:px-6 lg:px-8 pb-8 md:pb-10 pt-3 md:pt-4">
           {/* Dashboard View */}
           {showDashboard && section === "requests" && (
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-lg bg-primary/10 text-primary grid place-items-center">
@@ -3952,10 +4206,10 @@ const App: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow col-span-full md:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">{language === 'ar' ? 'التحليلات' : 'Analytics'}</h3>
-                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
+              <div className="bg-card border border-border rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow col-span-full sm:col-span-2 md:col-span-2">
+                <div className="flex items-center justify-between mb-2 md:mb-3">
+                  <h3 className="font-semibold text-sm md:text-base">{language === 'ar' ? 'التحليلات' : 'Analytics'}</h3>
+                  <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -3993,7 +4247,7 @@ const App: React.FC = () => {
 
           {/* Bulk Actions Bar */}
           {section === "requests" && selectedRequestIds.size > 0 && (
-            <div className="mb-4 bg-warning/10 border border-warning rounded-lg p-3 flex items-center justify-between">
+            <div className="mb-4 bg-warning/10 border border-warning rounded-lg p-2 md:p-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-0">
               <span className="font-semibold">{selectedRequestIds.size} {language === 'ar' ? 'طلبات محددة' : 'requests selected'}</span>
               <div className="flex gap-2">
                 {currentUser.role === "manager" && (
@@ -4031,12 +4285,16 @@ const App: React.FC = () => {
 
           {section === "inventory" ? (
             <InventoryManagement language={language} currentUser={currentUser} t={t} />
+          ) : section === "inventory-requests" ? (
+            <InventoryRequestManagement language={language} currentUser={currentUser} t={t} />
+          ) : section === "studio-bookings" ? (
+            <StudioBookingManagement language={language} currentUser={currentUser} t={t} />
           ) : section === "sales-visits" ? (
             <SalesVisitManagement language={language} currentUser={currentUser} t={t} />
           ) : section === "admin" ? (
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Admin Dashboard Header */}
-              <div className="rounded-xl border border-border bg-gradient-to-r from-warning/10 via-primary/10 to-warning/10 p-6 shadow-lg">
+              <div className="rounded-xl border border-border bg-gradient-to-r from-warning/10 via-primary/10 to-warning/10 p-4 md:p-6 shadow-lg">
                 <div className="flex items-center gap-4">
                   <div className="h-16 w-16 rounded-xl bg-warning text-warning-foreground grid place-items-center shadow-md">
                     <Settings className="h-8 w-8" />
@@ -4048,30 +4306,9 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Create User Card */}
-                <div className="rounded-xl border border-border bg-card shadow-md">
-                  <div className="border-b border-border bg-gradient-to-r from-primary/5 to-warning/5 px-6 py-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <Plus className="h-5 w-5 text-primary" />
-                      {t('createUser')}
-                    </h3>
-                    <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'إضافة مستخدمين جدد إلى النظام بأدوار محددة' : 'Add new users to the system with specific roles'}</p>
-                  </div>
-                  <div className="p-6">
-                    <AdminCreateUserForm 
-                      t={t} 
-                      onCreated={(u) => {
-                        addToast('success', t('userCreated'));
-                        handleRefreshUsers();
-                      }} 
-                    />
-                  </div>
-                </div>
-
-                {/* System Stats & Analytics */}
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+              {/* System Stats & Analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
                         <FileText className="h-5 w-5" />
@@ -4189,7 +4426,6 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
 
               {/* Users List */}
               <div className="rounded-xl border border-border bg-card shadow-md">
@@ -4202,16 +4438,25 @@ const App: React.FC = () => {
                       </h3>
                       <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'إدارة حسابات المستخدمين والأدوار' : 'Manage user accounts and roles'}</p>
                     </div>
-                    <button
-                      onClick={handleRefreshUsers}
-                      disabled={loadingUsers}
-                      className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary transition-all duration-200 disabled:opacity-50"
-                    >
-                      <svg className={clsx("h-4 w-4", loadingUsers && "animate-spin")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      {language === 'ar' ? 'تحديث' : 'Refresh'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleRefreshUsers}
+                        disabled={loadingUsers}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary transition-all duration-200 disabled:opacity-50"
+                      >
+                        <svg className={clsx("h-4 w-4", loadingUsers && "animate-spin")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        {language === 'ar' ? 'تحديث' : 'Refresh'}
+                      </button>
+                      <button
+                        onClick={() => setShowAddUserDialog(true)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-all duration-200"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {language === 'ar' ? 'إضافة مستخدم' : 'Add User'}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="p-6">
@@ -4235,7 +4480,7 @@ const App: React.FC = () => {
                         <Users className="h-8 w-8 text-primary" />
                       </div>
                       <p className="text-sm font-semibold text-foreground">{language === 'ar' ? 'لم يتم العثور على مستخدمين' : 'No users found'}</p>
-                      <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'قم بإنشاء أول مستخدم أعلاه' : 'Create your first user above'}</p>
+                      <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'لا يوجد مستخدمون مسجلون في النظام' : 'No users registered in the system'}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -4307,19 +4552,177 @@ const App: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Add User Dialog */}
+              {showAddUserDialog && (
+                <>
+                  <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+                    onClick={() => { setShowAddUserDialog(false); setNewUserErrors({}); }}
+                  />
+                  <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+                    <div
+                      className="rounded-xl border border-border shadow-2xl"
+                      style={{ background: "var(--gradient-luxury-card)" }}
+                    >
+                      <div className="border-b border-border bg-gradient-to-r from-primary/10 to-warning/10 px-6 py-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-bold">{language === 'ar' ? 'إضافة مستخدم جديد' : 'Add New User'}</h3>
+                          <button
+                            onClick={() => { setShowAddUserDialog(false); setNewUserErrors({}); }}
+                            className="rounded-lg p-2 hover:bg-secondary transition-colors"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-subtext mt-1">{language === 'ar' ? 'املأ التفاصيل لإنشاء حساب مستخدم جديد' : 'Fill in the details to create a new user account'}</p>
+                      </div>
+                      <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'الاسم الكامل' : 'Full Name'} <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={newUserData.name}
+                            onChange={(e) => {
+                              setNewUserData(prev => ({ ...prev, name: e.target.value }));
+                              setNewUserErrors(prev => ({ ...prev, name: [] }));
+                            }}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={language === 'ar' ? 'أدخل الاسم الكامل' : 'Enter full name'}
+                          />
+                          {newUserErrors.name && newUserErrors.name.length > 0 && (
+                            <p className="text-xs text-destructive mt-1">{newUserErrors.name.join(' - ')}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'} <span className="text-red-500">*</span></label>
+                          <input
+                            type="email"
+                            value={newUserData.email}
+                            onChange={(e) => {
+                              setNewUserData(prev => ({ ...prev, email: e.target.value }));
+                              setNewUserErrors(prev => ({ ...prev, email: [] }));
+                            }}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={language === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter email address'}
+                          />
+                          {newUserErrors.email && newUserErrors.email.length > 0 && (
+                            <p className="text-xs text-destructive mt-1">{newUserErrors.email.join(' - ')}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'كلمة المرور' : 'Password'} <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={newUserData.password}
+                            onChange={(e) => {
+                              setNewUserData(prev => ({ ...prev, password: e.target.value }));
+                              setNewUserErrors(prev => ({ ...prev, password: [] }));
+                            }}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={language === 'ar' ? 'أدخل كلمة المرور' : 'Enter password'}
+                          />
+                          {newUserErrors.password && newUserErrors.password.length > 0 && (
+                            <p className="text-xs text-destructive mt-1">{newUserErrors.password.join(' - ')}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'الدور' : 'Role'} <span className="text-red-500">*</span></label>
+                          <select
+                            value={newUserData.role}
+                            onChange={(e) => setNewUserData(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="USER">{language === 'ar' ? 'مستخدم' : 'User'}</option>
+                            <option value="DIRECT_MANAGER">{language === 'ar' ? 'مدير مباشر' : 'Direct Manager'}</option>
+                            <option value="ACCOUNTANT">{language === 'ar' ? 'محاسب' : 'Accountant'}</option>
+                            <option value="FINAL_MANAGER">{language === 'ar' ? 'مدير نهائي' : 'Final Manager'}</option>
+                            <option value="ADMIN">{language === 'ar' ? 'مسؤول' : 'Admin'}</option>
+                            <option value="SALES_REP">{language === 'ar' ? 'مندوب مبيعات' : 'Sales Representative'}</option>
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold">{language === 'ar' ? 'الاسم الأول' : 'First Name'}</label>
+                            <input
+                              type="text"
+                              value={newUserData.first_name}
+                              onChange={(e) => setNewUserData(prev => ({ ...prev, first_name: e.target.value }))}
+                              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder={language === 'ar' ? 'اختياري' : 'Optional'}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold">{language === 'ar' ? 'اسم العائلة' : 'Last Name'}</label>
+                            <input
+                              type="text"
+                              value={newUserData.last_name}
+                              onChange={(e) => setNewUserData(prev => ({ ...prev, last_name: e.target.value }))}
+                              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              placeholder={language === 'ar' ? 'اختياري' : 'Optional'}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'رقم الهاتف' : 'Phone'}</label>
+                          <input
+                            type="tel"
+                            value={newUserData.phone}
+                            onChange={(e) => setNewUserData(prev => ({ ...prev, phone: e.target.value }))}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={language === 'ar' ? 'اختياري' : 'Optional'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-semibold">{language === 'ar' ? 'المنصب' : 'Position'}</label>
+                          <input
+                            type="text"
+                            value={newUserData.position}
+                            onChange={(e) => setNewUserData(prev => ({ ...prev, position: e.target.value }))}
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={language === 'ar' ? 'اختياري' : 'Optional'}
+                          />
+                        </div>
+                      </div>
+                      <div className="border-t border-border px-6 py-4 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => { setShowAddUserDialog(false); setNewUserErrors({}); }}
+                          disabled={isCreatingUser}
+                          className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-secondary transition-colors disabled:opacity-50"
+                        >
+                          {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                        </button>
+                        <button
+                          onClick={handleCreateUser}
+                          disabled={isCreatingUser}
+                          className="rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {isCreatingUser && (
+                            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          {language === 'ar' ? 'إنشاء مستخدم' : 'Create User'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-6">
               {/* Column 1: Request List - Hide when creating */}
               {view === "detail" && (
-                <section className="md:col-span-3">
+                <section className="md:col-span-4 lg:col-span-3">
                   <div className="rounded-xl border border-border bg-card shadow-md hover:shadow-lg transition-shadow duration-200">
-                    <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-border p-2 md:p-3">
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder={t("search")}
-                        className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
+                        className="w-full rounded-md border border-border bg-background px-2 md:px-3 py-1.5 text-sm shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20"
                       />
                     </div>
               {showFilters && (
@@ -4337,15 +4740,15 @@ const App: React.FC = () => {
                         />
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                       <label className="text-xs text-subtext">{t("status")}</label>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 md:gap-2">
                         {(["Pending","Approved","Rejected","Awaiting Payment","Awaiting Selection","Active","Processed","Processing","Done","Paid"] as Array<PurchaseRequest["status"]>).map((s) => (
                           <button
                             key={s}
                             onClick={() => toggleStatus(s)}
                             className={clsx(
-                              "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200",
+                              "rounded-full border px-2 md:px-3 py-1 md:py-1.5 text-xs font-semibold transition-all duration-200",
                               filterStatuses.includes(s)
                                 ? "bg-warning text-warning-foreground border-warning shadow-md scale-105"
                                 : "border-border hover:bg-secondary hover:border-primary hover:scale-105"
@@ -4425,7 +4828,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="max-h-[70vh] space-y-2 overflow-auto p-3">
+              <div className="max-h-[60vh] md:max-h-[70vh] space-y-2 overflow-auto p-2 md:p-3">
                 {isLoading ? (
                   <div className="space-y-2">
                     {[1, 2, 3, 4].map((n) => (
@@ -4469,20 +4872,13 @@ const App: React.FC = () => {
                   ))
                 )}
               </div>
-              {/* Admin Panel */}
-              {currentUser.apiRole === 'ADMIN' && (
-                <div className="border-t border-border p-3">
-                  <h3 className="mb-2 text-sm font-semibold">{t('adminPanel')}</h3>
-                  <AdminCreateUserForm t={t} onCreated={(u)=>addToast('success', t('userCreated'))} />
-                </div>
-              )}
             </div>
           </section>
               )}
 
           {/* Column 2: Detail or Create */}
           <section className={clsx(
-            view === "creating" || view === "creatingProject" ? "md:col-span-12" : "md:col-span-6"
+            view === "creating" || view === "creatingProject" ? "md:col-span-12" : "md:col-span-8 lg:col-span-9"
           )}>
             {view === "creating" ? (
               <RequestCreateForm

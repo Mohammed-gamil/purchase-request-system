@@ -937,6 +937,35 @@
     overflow-y: auto; /* Allow content to scroll */
   }
 
+  /* Tablet breakpoint: 768px and up */
+  @media (min-width: 768px) {
+    .app-layout {
+      grid-template-columns: 280px 1fr; /* Slightly wider sidebar for tablets */
+    }
+
+    .sidebar {
+      grid-column: 1 / 2;
+    }
+
+    .main-content {
+      grid-column: 2 / 3;
+      padding: 1.5rem; /* Better padding for tablets */
+    }
+
+    /* RTL Override for Tablet Layout */
+    [dir="rtl"] .app-layout {
+      grid-template-columns: 1fr 280px;
+    }
+
+    [dir="rtl"] .sidebar {
+      grid-column: 2 / 3;
+    }
+
+    [dir="rtl"] .main-content {
+      grid-column: 1 / 2;
+    }
+  }
+
   /* Desktop and up */
   @media (min-width: 1024px) {
     .app-layout {
@@ -949,6 +978,7 @@
 
     .main-content {
       grid-column: 2 / 3;
+      padding: 2rem;
     }
 
   /* RTL Override for Grid Layout: flip columns so sidebar appears on the right when [dir="rtl"] */
@@ -973,10 +1003,26 @@
 /* 1. Global Layout & Spacing
    -------------------------------------------------------------------------- */
 .pr-page-container {
-  padding: 2rem; /* Increased padding for more breathing room */
+  padding: 1rem; /* Mobile padding */
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Consistent vertical gap */
+  gap: 1rem; /* Consistent vertical gap */
+}
+
+/* Tablet optimization */
+@media (min-width: 768px) {
+  .pr-page-container {
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+}
+
+/* Desktop optimization */
+@media (min-width: 1024px) {
+  .pr-page-container {
+    padding: 2rem; /* Increased padding for more breathing room */
+    gap: 1.5rem;
+  }
 }
 
 /* 2. Typography & Visual Hierarchy
@@ -1028,8 +1074,24 @@
    -------------------------------------------------------------------------- */
 .pr-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* Tablet optimization for card grid */
+@media (min-width: 768px) {
+  .pr-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+/* Desktop optimization for card grid */
+@media (min-width: 1024px) {
+  .pr-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
 }
 
 /* 5. The Request Card Component (`.pr-card`)

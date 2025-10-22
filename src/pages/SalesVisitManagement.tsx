@@ -137,12 +137,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
     const colors: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-700',
       submitted: 'bg-blue-100 text-blue-700',
-      pending_review: 'bg-yellow-100 text-yellow-700',
-      action_required: 'bg-orange-100 text-orange-700',
-      approved: 'bg-green-100 text-green-700',
-      quotation_sent: 'bg-purple-100 text-purple-700',
-      closed_won: 'bg-emerald-100 text-emerald-700',
-      closed_lost: 'bg-red-100 text-red-700',
+      completed: 'bg-green-100 text-green-700',
     };
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
@@ -182,7 +177,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
 
       {/* Stats Cards (Admin Only) */}
       {isAdmin && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
@@ -196,32 +191,20 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">{t('pendingReview')}</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending_review}</p>
+                <p className="text-gray-600 text-sm">{language === 'ar' ? 'قيد التقديم' : 'Submitted'}</p>
+                <p className="text-2xl font-bold text-blue-600">{visits.filter(v => v.status === 'submitted').length}</p>
               </div>
-              <Clock className="w-10 h-10 text-yellow-500" />
+              <Clock className="w-10 h-10 text-blue-500" />
             </div>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">{t('approved')}</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                <p className="text-gray-600 text-sm">{language === 'ar' ? 'مكتملة' : 'Completed'}</p>
+                <p className="text-2xl font-bold text-green-600">{visits.filter(v => v.status === 'completed').length}</p>
               </div>
               <CheckCircle className="w-10 h-10 text-green-500" />
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">{t('conversionRate')}</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {stats.total > 0 ? ((stats.closed_won / stats.total) * 100).toFixed(1) : 0}%
-                </p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-purple-500" />
             </div>
           </div>
         </div>
@@ -249,12 +232,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
             <option value="">{t('allStatuses')}</option>
             <option value="draft">{t('draft')}</option>
             <option value="submitted">{t('submitted')}</option>
-            <option value="pending_review">{t('pendingReview')}</option>
-            <option value="action_required">{t('actionRequired')}</option>
-            <option value="approved">{t('approved')}</option>
-            <option value="quotation_sent">{t('quotationSent')}</option>
-            <option value="closed_won">{t('closedWon')}</option>
-            <option value="closed_lost">{t('closedLost')}</option>
+            <option value="completed">{language === 'ar' ? 'مكتملة' : 'Completed'}</option>
           </select>
 
           <input
@@ -411,7 +389,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
                       >
                         <Eye className="w-5 h-5" />
                       </button>
-                      {(isSalesRep || isAdmin) && visit.status === 'draft' && (
+                      {(isSalesRep || isAdmin) && (
                         <button
                           onClick={() => setEditingVisit(visit)}
                           className="text-green-600 hover:text-green-900"

@@ -36,21 +36,13 @@ const VisitForm: React.FC<VisitFormProps> = ({
   const [formData, setFormData] = useState({
     client_id: editVisit?.client_id || '',
     visit_date: editVisit?.visit_date || new Date().toISOString().split('T')[0],
-    has_previous_agency: editVisit?.has_previous_agency || false,
-    previous_agency_name: editVisit?.previous_agency_name || '',
-    needs_voiceover: editVisit?.needs_voiceover || false,
-    voiceover_language: editVisit?.voiceover_language || '',
-    shooting_goals: editVisit?.shooting_goals || [],
-    shooting_goals_other_text: editVisit?.shooting_goals_other_text || '',
-    service_types: editVisit?.service_types || [],
-    service_types_other_text: editVisit?.service_types_other_text || '',
-    preferred_location: editVisit?.preferred_location || '',
-    product_category_id: editVisit?.product_category_id || '',
-    product_description: editVisit?.product_description || '',
-    estimated_product_count: editVisit?.estimated_product_count || '',
-    preferred_shoot_date: editVisit?.preferred_shoot_date || '',
-    budget_range: editVisit?.budget_range || '',
+    visit_type: editVisit?.visit_type || '',
+    visit_result: editVisit?.visit_result || '',
+    visit_reason: editVisit?.visit_reason || '',
     rep_notes: editVisit?.rep_notes || '',
+    follow_up_date: editVisit?.follow_up_date || '',
+    location_lat: editVisit?.location_lat || '',
+    location_lng: editVisit?.location_lng || '',
   });
 
   const [selectedClient, setSelectedClient] = useState<any>(editVisit?.client || null);
@@ -59,6 +51,7 @@ const VisitForm: React.FC<VisitFormProps> = ({
   const [newClient, setNewClient] = useState({
     store_name: '',
     contact_person: '',
+    email: '',
     mobile: '',
     mobile_2: '',
     address: '',
@@ -115,6 +108,73 @@ const VisitForm: React.FC<VisitFormProps> = ({
     }
   };
 
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert(language === 'ar' ? 'المتصفح لا يدعم تحديد الموقع' : 'Browser does not support geolocation');
+      return;
+    }
+
+    // Check if we're on HTTPS or localhost
+    const isSecureContext = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (!isSecureContext) {
+      alert(language === 'ar' 
+        ? 'يتطلب تحديد الموقع اتصال HTTPS آمن. يرجى استخدام HTTPS أو localhost'
+        : 'Geolocation requires a secure HTTPS connection. Please use HTTPS or localhost');
+      return;
+    }
+
+    // Show loading state
+    const loadingMsg = language === 'ar' ? 'جاري تحديد الموقع...' : 'Getting location...';
+    console.log(loadingMsg);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 10 seconds
+      maximumAge: 0
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData({
+          ...formData,
+          location_lat: position.coords.latitude.toFixed(6),
+          location_lng: position.coords.longitude.toFixed(6),
+        });
+        alert(language === 'ar' 
+          ? `تم تحديد الموقع بنجاح\nخط العرض: ${position.coords.latitude.toFixed(6)}\nخط الطول: ${position.coords.longitude.toFixed(6)}`
+          : `Location determined successfully\nLatitude: ${position.coords.latitude.toFixed(6)}\nLongitude: ${position.coords.longitude.toFixed(6)}`);
+      },
+      (error) => {
+        let errorMsg = '';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = language === 'ar' 
+              ? 'تم رفض إذن الوصول للموقع. يرجى السماح بالوصول للموقع في إعدادات المتصفح'
+              : 'Location permission denied. Please allow location access in browser settings';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = language === 'ar'
+              ? 'معلومات الموقع غير متوفرة. تأكد من تفعيل GPS على جهازك'
+              : 'Location information unavailable. Make sure GPS is enabled on your device';
+            break;
+          case error.TIMEOUT:
+            errorMsg = language === 'ar'
+              ? 'انتهت مهلة طلب تحديد الموقع. يرجى المحاولة مرة أخرى'
+              : 'Location request timed out. Please try again';
+            break;
+          default:
+            errorMsg = language === 'ar'
+              ? `خطأ غير معروف في تحديد الموقع: ${error.message}`
+              : `Unknown error occurred: ${error.message}`;
+        }
+        alert(errorMsg);
+        console.error('Geolocation error:', error);
+      },
+      options
+    );
+  };
+
   const handleCreateClient = async () => {
     if (!newClient.store_name || !newClient.contact_person || !newClient.mobile || !newClient.business_type_id) {
       alert(t('pleaseFillRequiredFields') || 'Please fill all required fields');
@@ -142,6 +202,7 @@ const VisitForm: React.FC<VisitFormProps> = ({
         setNewClient({
           store_name: '',
           contact_person: '',
+          email: '',
           mobile: '',
           mobile_2: '',
           address: '',
@@ -169,8 +230,8 @@ const VisitForm: React.FC<VisitFormProps> = ({
       const payload = {
         ...formData,
         client_id: Number(formData.client_id),
-        product_category_id: formData.product_category_id ? Number(formData.product_category_id) : null,
-        estimated_product_count: formData.estimated_product_count ? Number(formData.estimated_product_count) : null,
+        location_lat: formData.location_lat ? parseFloat(formData.location_lat) : null,
+        location_lng: formData.location_lng ? parseFloat(formData.location_lng) : null,
       };
 
       let res;
@@ -192,25 +253,25 @@ const VisitForm: React.FC<VisitFormProps> = ({
     }
   };
 
-  const toggleArrayValue = (field: 'shooting_goals' | 'service_types', value: string) => {
-    const current = formData[field] as string[];
-    const updated = current.includes(value)
-      ? current.filter(v => v !== value)
-      : [...current, value];
-    setFormData({ ...formData, [field]: updated });
-  };
-
-  const shootingGoalsOptions = [
-    { value: 'social_media', label: language === 'ar' ? 'وسائل التواصل الاجتماعي' : 'Social Media' },
-    { value: 'in_store', label: language === 'ar' ? 'داخل المتجر' : 'In Store' },
-    { value: 'content_update', label: language === 'ar' ? 'تحديث المحتوى' : 'Content Update' },
-    { value: 'other', label: language === 'ar' ? 'أخرى' : 'Other' },
+  const visitTypeOptions = [
+    { value: 'new_client', label: language === 'ar' ? 'عميل جديد' : 'New Client' },
+    { value: 'follow_up', label: language === 'ar' ? 'متابعة' : 'Follow-up' },
+    { value: 'service_delivery', label: language === 'ar' ? 'تسليم خدمة' : 'Service Delivery' },
   ];
 
-  const serviceTypesOptions = [
-    { value: 'product_photo', label: language === 'ar' ? 'تصوير المنتجات' : 'Product Photo' },
-    { value: 'model_photo', label: language === 'ar' ? 'تصوير موديل' : 'Model Photo' },
-    { value: 'video', label: language === 'ar' ? 'فيديو' : 'Video' },
+  const visitResultOptions = [
+    { value: 'interested', label: language === 'ar' ? 'مهتم' : 'Interested' },
+    { value: 'not_interested', label: language === 'ar' ? 'غير مهتم' : 'Not Interested' },
+    { value: 'needs_follow_up', label: language === 'ar' ? 'يحتاج متابعة' : 'Needs Follow-up' },
+    { value: 'deal_closed', label: language === 'ar' ? 'تم إغلاق الصفقة' : 'Deal Closed' },
+  ];
+
+  const visitReasonOptions = [
+    { value: 'product_presentation', label: language === 'ar' ? 'عرض منتج' : 'Product Presentation' },
+    { value: 'price_discussion', label: language === 'ar' ? 'مناقشة الأسعار' : 'Price Discussion' },
+    { value: 'contract_signing', label: language === 'ar' ? 'توقيع عقد' : 'Contract Signing' },
+    { value: 'service_inquiry', label: language === 'ar' ? 'استفسار عن خدمة' : 'Service Inquiry' },
+    { value: 'complaint_resolution', label: language === 'ar' ? 'حل شكوى' : 'Complaint Resolution' },
     { value: 'other', label: language === 'ar' ? 'أخرى' : 'Other' },
   ];
 
@@ -382,6 +443,17 @@ const VisitForm: React.FC<VisitFormProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1">
+                      {language === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                    </label>
+                    <input
+                      type="email"
+                      value={newClient.email}
+                      onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1">
                       {t('mobile') || 'Mobile'} <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -466,220 +538,127 @@ const VisitForm: React.FC<VisitFormProps> = ({
             />
           </div>
 
-          {/* Previous Agency */}
+          {/* Location Coordinates */}
           <div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.has_previous_agency}
-                onChange={(e) => setFormData({ ...formData, has_previous_agency: e.target.checked })}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-semibold">
-                {language === 'ar' ? 'هل لديهم وكالة سابقة؟' : 'Has Previous Agency?'}
-              </span>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              {language === 'ar' ? 'إحداثيات الموقع (GPS)' : 'Location Coordinates (GPS)'}
             </label>
-            {formData.has_previous_agency && (
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={formData.previous_agency_name}
-                onChange={(e) => setFormData({ ...formData, previous_agency_name: e.target.value })}
-                placeholder={language === 'ar' ? 'اسم الوكالة السابقة' : 'Previous Agency Name'}
-                className="w-full px-4 py-2 border rounded-lg mt-2"
+                value={formData.location_lat && formData.location_lng ? `${formData.location_lat}, ${formData.location_lng}` : ''}
+                placeholder={language === 'ar' ? 'مثال: 46.6753, 24.7136' : 'Example: 46.6753, 24.7136'}
+                className="flex-1 px-4 py-2 border rounded-lg bg-gray-50"
+                readOnly
               />
-            )}
-          </div>
-
-          {/* Voiceover */}
-          <div>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.needs_voiceover}
-                onChange={(e) => setFormData({ ...formData, needs_voiceover: e.target.checked })}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-semibold">
-                {language === 'ar' ? 'يحتاج تعليق صوتي؟' : 'Needs Voiceover?'}
-              </span>
-            </label>
-            {formData.needs_voiceover && (
-              <input
-                type="text"
-                value={formData.voiceover_language}
-                onChange={(e) => setFormData({ ...formData, voiceover_language: e.target.value })}
-                placeholder={language === 'ar' ? 'اللغة (عربي، إنجليزي، إلخ)' : 'Language (Arabic, English, etc.)'}
-                className="w-full px-4 py-2 border rounded-lg mt-2"
-              />
-            )}
-          </div>
-
-          {/* Shooting Goals */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'أهداف التصوير' : 'Shooting Goals'}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {shootingGoalsOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={formData.shooting_goals.includes(option.value)}
-                    onChange={() => toggleArrayValue('shooting_goals', option.value)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
+              <button
+                type="button"
+                onClick={handleGetLocation}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+              >
+                {language === 'ar' ? 'تحديد الموقع' : 'Determine Location'}
+              </button>
             </div>
-            {formData.shooting_goals.includes('other') && (
-              <textarea
-                value={formData.shooting_goals_other_text}
-                onChange={(e) => setFormData({ ...formData, shooting_goals_other_text: e.target.value })}
-                placeholder={language === 'ar' ? 'حدد أهداف أخرى...' : 'Specify other goals...'}
-                className="w-full px-4 py-2 border rounded-lg mt-2"
-                rows={2}
-              />
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              {language === 'ar' ? 'اضغط على "تحديد الموقع" للحصول على الإحداثيات تلقائياً' : 'Click "Determine Location" to get coordinates automatically'}
+            </p>
           </div>
 
-          {/* Service Types */}
+          {/* Visit Type */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'أنواع الخدمات' : 'Service Types'}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {serviceTypesOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={formData.service_types.includes(option.value)}
-                    onChange={() => toggleArrayValue('service_types', option.value)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
-            </div>
-            {formData.service_types.includes('other') && (
-              <textarea
-                value={formData.service_types_other_text}
-                onChange={(e) => setFormData({ ...formData, service_types_other_text: e.target.value })}
-                placeholder={language === 'ar' ? 'حدد خدمات أخرى...' : 'Specify other services...'}
-                className="w-full px-4 py-2 border rounded-lg mt-2"
-                rows={2}
-              />
-            )}
-          </div>
-
-          {/* Preferred Location */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'الموقع المفضل' : 'Preferred Location'}
+              {language === 'ar' ? 'نوع العميل' : 'Visit Type'}
             </label>
             <select
-              value={formData.preferred_location}
-              onChange={(e) => setFormData({ ...formData, preferred_location: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              value={formData.visit_type}
+              onChange={(e) => setFormData({ ...formData, visit_type: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">{language === 'ar' ? 'اختر الموقع' : 'Select Location'}</option>
-              <option value="client_location">{language === 'ar' ? 'موقع العميل' : 'Client Location'}</option>
-              <option value="action_studio">{language === 'ar' ? 'استوديو أكشن' : 'Action Studio'}</option>
-              <option value="external">{language === 'ar' ? 'خارجي' : 'External'}</option>
-            </select>
-          </div>
-
-          {/* Product Category */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'فئة المنتج' : 'Product Category'}
-            </label>
-            <select
-              value={formData.product_category_id}
-              onChange={(e) => setFormData({ ...formData, product_category_id: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-            >
-              <option value="">{language === 'ar' ? 'اختر الفئة' : 'Select Category'}</option>
-              {productCategories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {language === 'ar' ? cat.name_ar : cat.name_en}
+              <option value="">{language === 'ar' ? 'اختر نوع الزيارة' : 'Select Visit Type'}</option>
+              {visitTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Product Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'وصف المنتج' : 'Product Description'}
-            </label>
-            <textarea
-              value={formData.product_description}
-              onChange={(e) => setFormData({ ...formData, product_description: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-              rows={3}
-            />
+          {/* Visit Details Section */}
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-semibold mb-4">
+              {language === 'ar' ? 'تفاصيل الزيارة' : 'Visit Details'}
+            </h3>
+
+            {/* Visit Result */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {language === 'ar' ? 'نتيجة الزيارة' : 'Visit Result'}
+              </label>
+              <select
+                value={formData.visit_result}
+                onChange={(e) => setFormData({ ...formData, visit_result: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{language === 'ar' ? 'اختر نتيجة الزيارة' : 'Select Visit Result'}</option>
+                {visitResultOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Visit Reason */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {language === 'ar' ? 'سبب الزيارة' : 'Visit Reason'}
+              </label>
+              <select
+                value={formData.visit_reason}
+                onChange={(e) => setFormData({ ...formData, visit_reason: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">{language === 'ar' ? 'اختر سبب الزيارة' : 'Select Visit Reason'}</option>
+                {visitReasonOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Agent Notes */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {language === 'ar' ? 'ملاحظات العميل' : 'Agent Notes'}
+              </label>
+              <textarea
+                value={formData.rep_notes}
+                onChange={(e) => setFormData({ ...formData, rep_notes: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder={language === 'ar' ? 'أضف أي ملاحظات إضافية...' : 'Add any additional notes...'}
+              />
+            </div>
           </div>
 
-          {/* Estimated Product Count */}
+          {/* Follow-up Date */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'عدد المنتجات المتوقع' : 'Estimated Product Count'}
-            </label>
-            <input
-              type="number"
-              value={formData.estimated_product_count}
-              onChange={(e) => setFormData({ ...formData, estimated_product_count: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-              min="1"
-            />
-          </div>
-
-          {/* Preferred Shoot Date */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'تاريخ التصوير المفضل' : 'Preferred Shoot Date'}
+              {language === 'ar' ? 'تاريخ المتابعة القادمة' : 'Follow-up Date'}
             </label>
             <input
               type="date"
-              value={formData.preferred_shoot_date}
-              onChange={(e) => setFormData({ ...formData, preferred_shoot_date: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-
-          {/* Budget Range */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'نطاق الميزانية' : 'Budget Range'}
-            </label>
-            <input
-              type="text"
-              value={formData.budget_range}
-              onChange={(e) => setFormData({ ...formData, budget_range: e.target.value })}
-              placeholder={language === 'ar' ? 'مثال: 10000-15000 ريال' : 'e.g., 10000-15000 SAR'}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-
-          {/* Rep Notes */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'ملاحظات المندوب' : 'Rep Notes'}
-            </label>
-            <textarea
-              value={formData.rep_notes}
-              onChange={(e) => setFormData({ ...formData, rep_notes: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-              rows={3}
-              placeholder={language === 'ar' ? 'أضف أي ملاحظات إضافية...' : 'Add any additional notes...'}
+              value={formData.follow_up_date}
+              onChange={(e) => setFormData({ ...formData, follow_up_date: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* File Upload Section */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {language === 'ar' ? 'رفع صور أو فيديوهات من موقع العميل' : 'Upload Photos or Videos from Client Location'}
+              {language === 'ar' ? 'صورة الموقع أو الأوساط' : 'Photo from Location or Surroundings'}
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-2" />
@@ -690,8 +669,8 @@ const VisitForm: React.FC<VisitFormProps> = ({
               </p>
               <p className="text-xs text-gray-500">
                 {language === 'ar'
-                  ? 'الحد الأقصى: 50 ميجابايت للملف الواحد'
-                  : 'Max: 50MB per file'}
+                  ? 'الحد الأقصى: 5MB. الأنواع المدعومة: JPG, PNG, GIF'
+                  : 'Max: 5MB. Supported types: JPG, PNG, GIF'}
               </p>
             </div>
           </div>
@@ -713,7 +692,7 @@ const VisitForm: React.FC<VisitFormProps> = ({
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
               ) : (
-                editVisit ? (t('update') || 'Update') : (t('create') || 'Create')
+                editVisit ? (t('update') || 'Update') : (language === 'ar' ? 'حفظ الزيارة' : 'Save Visit')
               )}
             </button>
           </div>

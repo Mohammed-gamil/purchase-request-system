@@ -170,7 +170,10 @@ export const apiClient = {
       const response = await axiosInstance.post(url, data);
       return response.data;
     } catch (error: unknown) {
-      const err = (error as any)?.response?.data?.error;
+      const axiosError = error as any;
+      // If server returned a response (e.g., validation errors), rethrow the original error
+      if (axiosError?.response) throw axiosError;
+      const err = axiosError?.response?.data?.error;
       const details: string[] | undefined = err?.details;
       const errorMessage = err?.message || 'Request failed';
       const composed = details && details.length ? `${errorMessage}: ${details.join('; ')}` : errorMessage;
@@ -183,7 +186,9 @@ export const apiClient = {
       const response = await axiosInstance.put(url, data);
       return response.data;
     } catch (error: unknown) {
-      const err = (error as any)?.response?.data?.error;
+      const axiosError = error as any;
+      if (axiosError?.response) throw axiosError;
+      const err = axiosError?.response?.data?.error;
       const details: string[] | undefined = err?.details;
       const errorMessage = err?.message || 'Request failed';
       const composed = details && details.length ? `${errorMessage}: ${details.join('; ')}` : errorMessage;
@@ -196,7 +201,9 @@ export const apiClient = {
       const response = await axiosInstance.patch(url, data);
       return response.data;
     } catch (error: unknown) {
-      const err = (error as any)?.response?.data?.error;
+      const axiosError = error as any;
+      if (axiosError?.response) throw axiosError;
+      const err = axiosError?.response?.data?.error;
       const details: string[] | undefined = err?.details;
       const errorMessage = err?.message || 'Request failed';
       const composed = details && details.length ? `${errorMessage}: ${details.join('; ')}` : errorMessage;
@@ -209,7 +216,9 @@ export const apiClient = {
       const response = await axiosInstance.delete(url);
       return response.data;
     } catch (error: unknown) {
-      const err = (error as any)?.response?.data?.error;
+      const axiosError = error as any;
+      if (axiosError?.response) throw axiosError;
+      const err = axiosError?.response?.data?.error;
       const details: string[] | undefined = err?.details;
       const errorMessage = err?.message || 'Request failed';
       const composed = details && details.length ? `${errorMessage}: ${details.join('; ')}` : errorMessage;
@@ -885,6 +894,152 @@ export const notificationsApi = {
   },
 };
 
+// Inventory Requests API
+export const inventoryRequestsApi = {
+  getAll: async (status?: string): Promise<any[]> => {
+    const params = status ? { status } : {};
+    const response = await axiosInstance.get('/inventory-requests', { params });
+    return response.data.data;
+  },
+
+  downloadPdf: async (id: number): Promise<void> => {
+    const token = tokenManager.getToken();
+    const url = `${API_BASE_URL}/inventory-requests/${id}/download`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `inventory_request_${id}.pdf`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
+      .then(res => res.blob())
+      .then(blob => {
+        const u = window.URL.createObjectURL(blob);
+        link.href = u;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(u);
+      });
+  },
+
+  downloadReturnReceipt: async (id: number): Promise<void> => {
+    const token = tokenManager.getToken();
+    const url = `${API_BASE_URL}/inventory-requests/${id}/download-return`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `return_receipt_${id}.pdf`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
+      .then(res => res.blob())
+      .then(blob => {
+        const u = window.URL.createObjectURL(blob);
+        link.href = u;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(u);
+      });
+  },
+
+  create: async (data: any): Promise<any> => {
+    const response = await axiosInstance.post('/inventory-requests', data);
+    return response.data.data;
+  },
+
+  getById: async (id: number): Promise<any> => {
+    const response = await axiosInstance.get(`/inventory-requests/${id}`);
+    return response.data.data;
+  },
+
+  update: async (id: number, data: any): Promise<any> => {
+    const response = await axiosInstance.put(`/inventory-requests/${id}`, data);
+    return response.data.data;
+  },
+
+  submit: async (id: number): Promise<any> => {
+    const response = await axiosInstance.post(`/inventory-requests/${id}/submit`);
+    return response.data.data;
+  },
+
+  updateStatus: async (id: number, status: string, reason?: string): Promise<any> => {
+    const response = await axiosInstance.post(`/inventory-requests/${id}/status`, {
+      status,
+      rejection_reason: reason,
+    });
+    return response.data.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/inventory-requests/${id}`);
+  },
+
+  getStats: async (): Promise<any> => {
+    const response = await axiosInstance.get('/inventory-requests/stats');
+    return response.data.data;
+  },
+};
+
+// Studio Bookings API
+export const studioBookingsApi = {
+  getAll: async (status?: string): Promise<any[]> => {
+    const params = status ? { status } : {};
+    const response = await axiosInstance.get('/studio-bookings', { params });
+    return response.data.data;
+  },
+
+  downloadPdf: async (id: number): Promise<void> => {
+    const token = tokenManager.getToken();
+    const url = `${API_BASE_URL}/studio-bookings/${id}/download`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `studio_booking_${id}.pdf`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
+      .then(res => res.blob())
+      .then(blob => {
+        const u = window.URL.createObjectURL(blob);
+        link.href = u;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(u);
+      });
+  },
+
+  create: async (data: any): Promise<any> => {
+    const response = await axiosInstance.post('/studio-bookings', data);
+    return response.data.data;
+  },
+
+  getById: async (id: number): Promise<any> => {
+    const response = await axiosInstance.get(`/studio-bookings/${id}`);
+    return response.data.data;
+  },
+
+  update: async (id: number, data: any): Promise<any> => {
+    const response = await axiosInstance.put(`/studio-bookings/${id}`, data);
+    return response.data.data;
+  },
+
+  submit: async (id: number): Promise<any> => {
+    const response = await axiosInstance.post(`/studio-bookings/${id}/submit`);
+    return response.data.data;
+  },
+
+  updateStatus: async (id: number, status: string, reason?: string): Promise<any> => {
+    const response = await axiosInstance.post(`/studio-bookings/${id}/status`, {
+      status,
+      rejection_reason: reason,
+    });
+    return response.data.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`/studio-bookings/${id}`);
+  },
+
+  getStats: async (): Promise<any> => {
+    const response = await axiosInstance.get('/studio-bookings/stats');
+    return response.data.data;
+  },
+};
+
 // Export default api object for backward compatibility
 const api = {
   auth: authApi,
@@ -896,6 +1051,8 @@ const api = {
   profile: profileApi,
   managerReports: managerReportsApi,
   inventory: inventoryApi,
+  inventoryRequests: inventoryRequestsApi,
+  studioBookings: studioBookingsApi,
   health: healthApi,
   visits: visitsApi,
 };

@@ -3,12 +3,7 @@
 export type VisitStatus = 
   | 'draft'
   | 'submitted'
-  | 'pending_review'
-  | 'action_required'
-  | 'approved'
-  | 'quotation_sent'
-  | 'closed_won'
-  | 'closed_lost';
+  | 'completed';
 
 export interface BusinessType {
   id: number;
@@ -32,6 +27,7 @@ export interface Client {
   contact_person: string;
   mobile: string;
   mobile_2?: string;
+  email?: string;
   address: string;
   business_type_id: number;
   business_type?: BusinessType;
@@ -58,43 +54,32 @@ export interface Visit {
   client_id: number;
   client?: Client;
   rep_id: number;
+  rep?: {
+    id: number;
+    name: string;
+    email: string;
+  };
   rep_name?: string;
   visit_date: string;
   status: VisitStatus;
   
-  // Client Needs
-  has_previous_agency: boolean;
-  previous_agency_name?: string;
-  needs_voiceover: boolean;
-  voiceover_language?: string;
-  shooting_goals: string[]; // ['social_media', 'in_store', 'content_update', 'other']
-  shooting_goals_other_text?: string;
-  service_types: string[]; // ['product_photo', 'model_photo', 'video', 'other']
-  service_types_other_text?: string;
-  preferred_location: 'client_location' | 'action_studio' | 'external';
-  
-  // Product Details
-  product_category_id?: number;
-  product_category?: ProductCategory;
-  product_description?: string;
-  estimated_product_count?: number;
-  
-  // Timing & Budget
-  preferred_shoot_date?: string;
-  budget_range?: string;
+  // Simplified Visit Fields
+  visit_type?: 'new_client' | 'follow_up' | 'service_delivery';
+  visit_result?: 'interested' | 'not_interested' | 'needs_follow_up' | 'deal_closed';
+  visit_reason?: string;
+  follow_up_date?: string;
+  location_lat?: number;
+  location_lng?: number;
   
   // Notes
   rep_notes?: string;
   admin_notes?: string;
-  action_required_message?: string;
   
   // Files
   files?: VisitFile[];
   
   // Metadata
   submitted_at?: string;
-  approved_at?: string;
-  approved_by_admin_id?: number;
   created_at: string;
   updated_at: string;
 }
