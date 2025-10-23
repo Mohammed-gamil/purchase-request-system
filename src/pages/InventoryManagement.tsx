@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { inventoryApi } from '@/lib/api';
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, X } from 'lucide-react';
 
 interface InventoryItem {
   id: string | number;
@@ -33,14 +33,51 @@ interface InventoryManagementProps {
   language?: Language;
   currentUser?: User;
   t?: (k: string) => string;
+  viewMode?: 'list' | 'create' | 'edit' | 'detail';
+  selectedId?: number;
+  onNavigate?: (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => void;
 }
 
-export const InventoryManagement: React.FC<InventoryManagementProps> = ({ language = 'en', currentUser, t }) => {
+export const InventoryManagement: React.FC<InventoryManagementProps> = ({ 
+  language = 'en', 
+  currentUser, 
+  t,
+  viewMode: propViewMode = 'list',
+  selectedId,
+  onNavigate
+}) => {
+  const viewMode: 'list' | 'create' | 'edit' | 'detail' = propViewMode;
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Handle navigation
+  const handleNavigate = (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => {
+    if (onNavigate) {
+      onNavigate(mode, id);
+    } else {
+      // Fallback to old modal behavior if no navigation handler provided
+      if (mode === 'create') setShowCreateModal(true);
+      else if (mode === 'list') {
+        setShowCreateModal(false);
+        setEditingItem(null);
+      }
+    }
+  };
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
+  
+  // Load selected item when in edit mode via routing
+  React.useEffect(() => {
+    if ((viewMode === 'edit' || viewMode === 'detail') && selectedId && items.length > 0) {
+      const item = items.find(i => Number(i.id) === Number(selectedId));
+      if (item && viewMode === 'edit') {
+        setEditingItem(item);
+      }
+    } else if (viewMode === 'create') {
+      setShowCreateModal(true);
+    }
+  }, [viewMode, selectedId, items]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [creating, setCreating] = useState(false);
@@ -279,252 +316,256 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          {isAr ? (
-            <>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md"
-              >
-                <Plus className="h-4 w-4" />
-                {t ? t('addItem') : 'Add Item'}
-              </button>
-              <div className="text-right">
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                  {t ? t('inventoryManagement') : 'Inventory Management'}
-                </h1>
-                <p className="text-sm text-subtext mt-1">
-                  {t ? t('inventoryManageSubtitle') : 'Manage tools, equipment, and materials'}
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                  {t ? t('inventoryManagement') : 'Inventory Management'}
-                </h1>
-                <p className="text-sm text-subtext mt-1">
-                  {t ? t('inventoryManageSubtitle') : 'Manage tools, equipment, and materials'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md"
-              >
-                <Plus className="h-4 w-4" />
-                {t ? t('addItem') : 'Add Item'}
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Filters */}
-        <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-shadow duration-200 hover:shadow-md">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtext" />
-              <input
-                type="text"
-                placeholder={t ? t('searchInventoryPlaceholder') : 'Search by name, code, or description...'}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-md border border-border bg-background pl-9 pr-3 py-2 text-sm transition-colors duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm transition-colors duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-            >
-              <option value="">{t ? t('allCategories') : 'All Categories'}</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Items Grid */}
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="rounded-lg border border-border bg-card p-4 space-y-3 animate-pulse">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-secondary rounded w-3/4"></div>
-                    <div className="h-3 bg-secondary rounded w-1/2"></div>
-                  </div>
-                  <div className="flex gap-1">
-                    <div className="h-8 w-8 bg-secondary rounded"></div>
-                    <div className="h-8 w-8 bg-secondary rounded"></div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-secondary rounded w-full"></div>
-                  <div className="h-3 bg-secondary rounded w-full"></div>
-                  <div className="h-3 bg-secondary rounded w-4/5"></div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-5 w-16 bg-secondary rounded-full"></div>
-                  <div className="h-5 w-20 bg-secondary rounded-full"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-12 text-center">
-            <Package className="mx-auto h-12 w-12 text-subtext" />
-            <h3 className="mt-4 text-lg font-semibold">{t ? t('noInventoryItems') : 'No inventory items'}</h3>
-            <p className="mt-2 text-sm text-subtext">
-              {t ? t('inventoryEmptyHelp') : 'Get started by adding your first inventory item.'}
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
-            >
-              <Plus className="h-4 w-4" />
-              {t ? t('addItem') : 'Add Item'}
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                className="rounded-lg border border-border bg-card p-4 space-y-3 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4"
-                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm">{item.name}</h3>
-                    <p className="text-xs text-subtext">{item.code}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEdit(item)}
-                      className="rounded p-1.5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                      title={t ? t('edit') : 'Edit'}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setItemToDelete(item)}
-                      disabled={item.reserved_quantity > 0}
-                      className={`rounded p-1.5 transition-all duration-200 ${
-                        item.reserved_quantity > 0
-                          ? 'opacity-40 cursor-not-allowed text-gray-400'
-                          : 'hover:bg-red-100 text-red-600'
-                      }`}
-                      title={
-                        item.reserved_quantity > 0
-                          ? (t ? t('cannotDeleteReserved') : 'Cannot delete: item has reserved quantity')
-                          : (t ? t('delete') : 'Delete')
-                      }
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-subtext">{t ? t('category') : 'Category'}:</span>
-                    <span className="font-medium">{item.category}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-subtext">{t ? t('total') : 'Total'}:</span>
-                    <span className="font-medium">
-                      {item.quantity} {item.unit}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-subtext">{t ? t('reserved') : 'Reserved'}:</span>
-                    <span className="font-medium text-orange-600">
-                      {item.reserved_quantity} {item.unit}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-subtext">{t ? t('available') : 'Available'}:</span>
-                    <span
-                      className={`font-semibold ${
-                        item.available_quantity > 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {item.available_quantity} {item.unit}
-                    </span>
-                  </div>
-                  {item.location && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-subtext">{t ? t('location') : 'Location'}:</span>
-                      <span className="font-medium">{item.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-transform duration-200 hover:scale-105 ${conditionBadge(
-                      item.condition
-                    )}`}
+    <>
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="min-h-screen bg-background p-4 md:p-6" dir={isAr ? 'rtl' : 'ltr'}>
+          <div className="mx-auto max-w-7xl space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              {isAr ? (
+                <>
+                  <button
+                    onClick={() => handleNavigate('create')}
+                    className="inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md"
                   >
-                    {conditionLabel(item.condition)}
-                  </span>
-                  {item.needs_maintenance && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 transition-transform duration-200 hover:scale-105 animate-pulse">
-                      <AlertTriangle className="h-3 w-3" />
-                      {t ? t('maintenanceDue') : 'Maintenance Due'}
-                    </span>
-                  )}
-                  {!item.is_active && (
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 transition-transform duration-200 hover:scale-105">
-                      {t ? t('inactive') : 'Inactive'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                    <Plus className="h-4 w-4" />
+                    {t ? t('addItem') : 'Add Item'}
+                  </button>
+                  <div className="text-right">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                      {t ? t('inventoryManagement') : 'Inventory Management'}
+                    </h1>
+                    <p className="text-sm text-subtext mt-1">
+                      {t ? t('inventoryManageSubtitle') : 'Manage tools, equipment, and materials'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                      {t ? t('inventoryManagement') : 'Inventory Management'}
+                    </h1>
+                    <p className="text-sm text-subtext mt-1">
+                      {t ? t('inventoryManageSubtitle') : 'Manage tools, equipment, and materials'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleNavigate('create')}
+                    className="inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 transition-all duration-200 hover:shadow-md"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t ? t('addItem') : 'Add Item'}
+                  </button>
+                </>
+              )}
+            </div>
 
-      {/* Modals would go here */}
-      {showCreateModal && (
+            {/* Filters */}
+            <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-shadow duration-200 hover:shadow-md">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtext" />
+                  <input
+                    type="text"
+                    placeholder={t ? t('searchInventoryPlaceholder') : 'Search by name, code, or description...'}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background pl-9 pr-3 py-2 text-sm transition-colors duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="rounded-md border border-border bg-background px-3 py-2 text-sm transition-colors duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
+                >
+                  <option value="">{t ? t('allCategories') : 'All Categories'}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Items Grid */}
+            {loading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="rounded-lg border border-border bg-card p-4 space-y-3 animate-pulse">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-secondary rounded w-3/4"></div>
+                        <div className="h-3 bg-secondary rounded w-1/2"></div>
+                      </div>
+                      <div className="flex gap-1">
+                        <div className="h-8 w-8 bg-secondary rounded"></div>
+                        <div className="h-8 w-8 bg-secondary rounded"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-secondary rounded w-full"></div>
+                      <div className="h-3 bg-secondary rounded w-full"></div>
+                      <div className="h-3 bg-secondary rounded w-4/5"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-5 w-16 bg-secondary rounded-full"></div>
+                      <div className="h-5 w-20 bg-secondary rounded-full"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="rounded-lg border border-border bg-card p-12 text-center">
+                <Package className="mx-auto h-12 w-12 text-subtext" />
+                <h3 className="mt-4 text-lg font-semibold">{t ? t('noInventoryItems') : 'No inventory items'}</h3>
+                <p className="mt-2 text-sm text-subtext">
+                  {t ? t('inventoryEmptyHelp') : 'Get started by adding your first inventory item.'}
+                </p>
+                <button
+                  onClick={() => handleNavigate('create')}
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t ? t('addItem') : 'Add Item'}
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-border bg-card p-4 space-y-3 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 animate-in fade-in slide-in-from-bottom-4"
+                    style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm">{item.name}</h3>
+                        <p className="text-xs text-subtext">{item.code}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            openEdit(item);
+                            handleNavigate('edit', Number(item.id));
+                          }}
+                          className="rounded p-1.5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                          title={t ? t('edit') : 'Edit'}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setItemToDelete(item)}
+                          disabled={item.reserved_quantity > 0}
+                          className={`rounded p-1.5 transition-all duration-200 ${
+                            item.reserved_quantity > 0
+                              ? 'opacity-40 cursor-not-allowed text-gray-400'
+                              : 'hover:bg-red-100 text-red-600'
+                          }`}
+                          title={
+                            item.reserved_quantity > 0
+                              ? (t ? t('cannotDeleteReserved') : 'Cannot delete: item has reserved quantity')
+                              : (t ? t('delete') : 'Delete')
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-subtext">{t ? t('category') : 'Category'}:</span>
+                        <span className="font-medium">{item.category}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-subtext">{t ? t('total') : 'Total'}:</span>
+                        <span className="font-medium">
+                          {item.quantity} {item.unit}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-subtext">{t ? t('reserved') : 'Reserved'}:</span>
+                        <span className="font-medium text-orange-600">
+                          {item.reserved_quantity} {item.unit}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-subtext">{t ? t('available') : 'Available'}:</span>
+                        <span
+                          className={`font-semibold ${
+                            item.available_quantity > 0
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {item.available_quantity} {item.unit}
+                        </span>
+                      </div>
+                      {item.location && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-subtext">{t ? t('location') : 'Location'}:</span>
+                          <span className="font-medium">{item.location}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-transform duration-200 hover:scale-105 ${conditionBadge(
+                          item.condition
+                        )}`}
+                      >
+                        {conditionLabel(item.condition)}
+                      </span>
+                      {item.needs_maintenance && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 transition-transform duration-200 hover:scale-105 animate-pulse">
+                          <AlertTriangle className="h-3 w-3" />
+                          {t ? t('maintenanceDue') : 'Maintenance Due'}
+                        </span>
+                      )}
+                      {!item.is_active && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 transition-transform duration-200 hover:scale-105">
+                          {t ? t('inactive') : 'Inactive'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {(showCreateModal || viewMode === 'create') && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setShowCreateModal(false);
-          }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowCreateModal(false); }}
+          className="bg-gray-50 min-h-screen w-full overflow-y-auto"
+          onKeyDown={(e) => { if (e.key === 'Escape') handleNavigate('list'); }}
           role="dialog"
           aria-modal="true"
         >
-            <div className="w-full max-w-2xl rounded-xl shadow-xl border border-border ring-1 ring-border/50 p-0 relative animate-in fade-in zoom-in bg-card bg-white bg-background">
-            <div className="h-1 w-full bg-gradient-to-r from-warning via-warning/90 to-warning/40 rounded-t-xl" />
-            <div className="p-6">
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(false)}
-              className="absolute top-3 end-3 h-8 w-8 inline-flex items-center justify-center rounded-md border border-border hover:bg-secondary text-sm"
-              aria-label={t ? t('close') : 'Close'}
-            >
-              ×
-            </button>
-            <h2 className="text-xl font-bold mb-4">
+            <div className="w-full">
+            <div className="sticky top-0 bg-white border-b px-4 md:px-6 py-4 flex justify-between items-center shadow-sm z-10">
+            <h2 className="text-xl md:text-2xl font-bold">
               {t ? t('addItemTitle') : 'Add Inventory Item'}
             </h2>
-            <form onSubmit={handleCreate} className="space-y-4 text-sm" dir={isAr ? 'rtl' : 'ltr'}>
-              <div className="grid gap-4 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => handleNavigate('list')}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label={t ? t('close') : 'Close'}
+            >
+              <X className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+            </div>
+            <div className="w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
+            <form onSubmit={handleCreate} className="space-y-6 text-sm" dir={isAr ? 'rtl' : 'ltr'}>
+              <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
                 <div>
                   <label className="block mb-2 text-sm font-bold text-primary uppercase tracking-wide">{t ? t('name') : 'Item Name'}</label>
                   <input value={form.name} onChange={e=>updateForm('name', e.target.value)} placeholder="e.g., Drill Machine, Paint Roller" className={`w-full rounded-lg border-2 bg-background px-3 py-2.5 font-medium shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${formErrors.name ? 'border-red-500 focus:ring-red-200' : 'border-border focus:border-primary focus:ring-primary/20'}`} />
@@ -607,7 +648,7 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
                   {Object.keys(formErrors).length === 0 && !creating && <span className="text-green-600 font-semibold">✓ Ready to save</span>}
                 </div>
                 <div className="flex gap-3">
-                  <button type="button" onClick={()=>setShowCreateModal(false)} className="rounded-lg border-2 border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary hover:border-primary transition-all duration-200">
+                  <button type="button" onClick={() => handleNavigate('list')} className="rounded-lg border-2 border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary hover:border-primary transition-all duration-200">
                     {t ? t('cancelSmall') : 'Cancel'}
                   </button>
                   <button type="submit" disabled={creating} className="inline-flex items-center gap-2 rounded-lg bg-warning px-6 py-2.5 text-sm font-bold text-warning-foreground hover:bg-warning/90 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
@@ -627,25 +668,25 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
         </div>
       )}
 
-      {editingItem && (
+      {(editingItem || viewMode === 'edit') && editingItem && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setEditingItem(null); }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setEditingItem(null); }}
+          className="fixed inset-0 z-50 bg-gray-50 overflow-y-auto"
+          onKeyDown={(e) => { if (e.key === 'Escape') handleNavigate('list'); }}
           role="dialog" aria-modal="true"
         >
-          <div className="w-full max-w-2xl rounded-xl shadow-xl border border-border ring-1 ring-border/50 p-0 relative animate-in fade-in zoom-in bg-card bg-white bg-background">
-            <div className="h-1 w-full bg-gradient-to-r from-warning via-warning/90 to-warning/40 rounded-t-xl" />
-            <div className="p-6">
+          <div className="w-full min-h-screen">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-10">
+              <h2 className="text-xl font-bold">{t ? t('editItemTitle') : 'Edit Inventory Item'}</h2>
               <button
                 type="button"
-                onClick={() => setEditingItem(null)}
-                className="absolute top-3 end-3 h-8 w-8 inline-flex items-center justify-center rounded-md border border-border hover:bg-secondary text-sm"
+                onClick={() => handleNavigate('list')}
+                className="text-gray-500 hover:text-gray-700"
                 aria-label={t ? t('close') : 'Close'}
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
-              <h2 className="text-xl font-bold mb-4">{t ? t('editItemTitle') : 'Edit Inventory Item'}</h2>
+            </div>
+            <div className="max-w-4xl mx-auto p-6">
               <form onSubmit={handleUpdate} className="space-y-4 text-sm" dir={isAr ? 'rtl' : 'ltr'}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
@@ -715,7 +756,7 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
                 </div>
                 {feedback && <div className="text-xs text-subtext">{feedback}</div>}
                 <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={()=>setEditingItem(null)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">
+                  <button type="button" onClick={() => handleNavigate('list')} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">
                     {t ? t('cancelSmall') : 'Cancel'}
                   </button>
                   <button type="submit" disabled={updating} className="rounded-md bg-warning px-4 py-2 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-60">
@@ -731,14 +772,13 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
       {/* Delete Confirmation Modal */}
       {itemToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setItemToDelete(null); }}
+          className="fixed inset-0 z-50 bg-gray-50 overflow-y-auto flex items-center justify-center p-4"
           onKeyDown={(e) => { if (e.key === 'Escape') setItemToDelete(null); }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-xl shadow-xl border border-border ring-1 ring-border/50 p-0 relative animate-in fade-in zoom-in bg-card bg-white bg-background">
-            <div className="h-1 w-full bg-gradient-to-r from-red-500 via-red-400 to-red-300 rounded-t-xl" />
+          <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-gray-200">
+            <div className="h-1 w-full bg-gradient-to-r from-red-500 via-red-400 to-red-300 rounded-t-lg" />
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 rounded-full bg-red-100 p-3">
@@ -822,7 +862,7 @@ export const InventoryManagement: React.FC<InventoryManagementProps> = ({ langua
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

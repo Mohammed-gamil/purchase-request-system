@@ -27,13 +27,20 @@ interface SalesVisitManagementProps {
     apiRole?: string;
   };
   t: (key: string) => string;
+  viewMode?: 'list' | 'create' | 'edit' | 'detail';
+  selectedId?: number;
+  onNavigate?: (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => void;
 }
 
 const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({ 
   language, 
   currentUser, 
-  t 
+  t,
+  viewMode: propViewMode = 'list',
+  selectedId,
+  onNavigate
 }) => {
+  const viewMode: 'list' | 'create' | 'edit' | 'detail' = propViewMode;
   const [visits, setVisits] = useState<Visit[]>([]);
   const [stats, setStats] = useState<VisitStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +56,34 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
 
   const isSalesRep = currentUser.apiRole === 'SALES_REP';
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(currentUser.apiRole || '');
+
+  // Handle navigation
+  const handleNavigate = (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => {
+    if (onNavigate) {
+      onNavigate(mode, id);
+    } else {
+      // Fallback to old modal behavior if no navigation handler provided
+      if (mode === 'create') setShowCreateForm(true);
+      else if (mode === 'list') {
+        setShowCreateForm(false);
+        setEditingVisit(null);
+        setSelectedVisit(null);
+      }
+    }
+  };
+
+  // Load selected visit when in detail/edit mode
+  useEffect(() => {
+    if ((viewMode === 'detail' || viewMode === 'edit') && selectedId && visits.length > 0) {
+      const visit = visits.find(v => v.id === selectedId);
+      if (visit) {
+        if (viewMode === 'detail') setSelectedVisit(visit);
+        else if (viewMode === 'edit') setEditingVisit(visit);
+      }
+    } else if (viewMode === 'create') {
+      setShowCreateForm(true);
+    }
+  }, [viewMode, selectedId, visits]);
 
   useEffect(() => {
     loadVisits();
@@ -152,31 +187,34 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {isSalesRep ? t('myVisits') : t('allVisits')}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {isSalesRep 
-              ? t('manageYourClientVisits') 
-              : t('manageAllSalesVisits')
-            }
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-5 h-5" />
-          {t('newVisit')}
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto">
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="p-6">
+          {/* Header */}
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isSalesRep ? t('myVisits') : t('allVisits')}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {isSalesRep 
+                  ? t('manageYourClientVisits') 
+                  : t('manageAllSalesVisits')
+                }
+              </p>
+            </div>
+            <button
+              onClick={() => handleNavigate('create')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus className="w-5 h-5" />
+              {t('newVisit')}
+            </button>
+          </div>
 
-      {/* Stats Cards (Admin Only) */}
-      {isAdmin && stats && (
+          {/* Stats Cards (Admin Only) */}
+          {isAdmin && stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
@@ -207,11 +245,11 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
               <CheckCircle className="w-10 h-10 text-green-500" />
             </div>
           </div>
-        </div>
-      )}
+          </div>
+          )}
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
+          {/* Filters */}
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -299,11 +337,11 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
             <FileText className="w-5 h-5" />
             {t('exportPdf') || 'Export to PDF'}
           </button>
-        </div>
-      </div>
+          </div>
+          </div>
 
-      {/* Visits Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Visits Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -314,7 +352,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600">{t('noVisitsFound')}</p>
             <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => handleNavigate('create')}
               className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
             >
               {t('createFirstVisit')}
@@ -378,12 +416,12 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {visit.preferred_shoot_date ? formatDate(visit.preferred_shoot_date) : '-'}
+                    {visit.follow_up_date ? formatDate(visit.follow_up_date) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => setSelectedVisit(visit)}
+                        onClick={() => handleNavigate('detail', visit.id)}
                         className="text-blue-600 hover:text-blue-900"
                         title={t('viewDetails')}
                       >
@@ -391,7 +429,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
                       </button>
                       {(isSalesRep || isAdmin) && (
                         <button
-                          onClick={() => setEditingVisit(visit)}
+                          onClick={() => handleNavigate('edit', visit.id)}
                           className="text-green-600 hover:text-green-900"
                           title={t('edit')}
                         >
@@ -405,39 +443,41 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
             </tbody>
           </table>
         )}
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* Visit Form Modal - Create */}
-      {showCreateForm && (
+      {/* Visit Form - Create */}
+      {(showCreateForm || viewMode === 'create') && (
         <VisitForm
           language={language}
           currentUser={currentUser}
           t={t}
-          onClose={() => setShowCreateForm(false)}
+          onClose={() => handleNavigate('list')}
           onSuccess={() => {
             loadVisits();
-            setShowCreateForm(false);
+            handleNavigate('list');
           }}
         />
       )}
 
-      {/* Visit Form Modal - Edit */}
-      {editingVisit && (
+      {/* Visit Form - Edit */}
+      {(editingVisit || viewMode === 'edit') && (editingVisit || selectedVisit) && (
         <VisitForm
           language={language}
           currentUser={currentUser}
           t={t}
-          editVisit={editingVisit}
-          onClose={() => setEditingVisit(null)}
+          editVisit={editingVisit || selectedVisit!}
+          onClose={() => handleNavigate('list')}
           onSuccess={() => {
             loadVisits();
-            setEditingVisit(null);
+            handleNavigate('list');
           }}
         />
       )}
 
-      {/* Visit Detail View Modal */}
-      {selectedVisit && !editingVisit && (
+      {/* Visit Detail View */}
+      {((selectedVisit && !editingVisit && viewMode !== 'edit') || viewMode === 'detail') && selectedVisit && (
         <VisitDetailView
           visit={selectedVisit}
           language={language}
@@ -445,7 +485,7 @@ const SalesVisitManagement: React.FC<SalesVisitManagementProps> = ({
           currentUser={currentUser}
           onStatusUpdate={handleStatusUpdate}
           onAddNotes={handleAddNotes}
-          onClose={() => setSelectedVisit(null)}
+          onClose={() => handleNavigate('list')}
         />
       )}
     </div>

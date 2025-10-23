@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Plus, Search, Filter, Download, Printer, Calendar, User, CheckCircle, XCircle, Clock, Video, X, Eye, ThumbsUp, ThumbsDown, Send, FileText } from 'lucide-react';
 import { studioBookingsApi, apiClient } from '@/lib/api';
+import StudioBookingPrintView from '@/components/pr/StudioBookingPrintView';
 
 interface StudioBookingManagementProps {
   language: 'en' | 'ar';
@@ -12,6 +13,9 @@ interface StudioBookingManagementProps {
     apiRole?: string;
   };
   t: (key: string) => string;
+  viewMode?: 'list' | 'create' | 'edit' | 'detail';
+  selectedId?: number;
+  onNavigate?: (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => void;
 }
 
 interface StudioBooking {
@@ -51,12 +55,18 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
   language,
   currentUser,
   t,
+  viewMode: propViewMode = 'list',
+  selectedId,
+  onNavigate
 }) => {
+  const viewMode: 'list' | 'create' | 'edit' | 'detail' = propViewMode;
   const [bookings, setBookings] = useState<StudioBooking[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<StudioBooking | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [rejectionReason, setRejectionReason] = useState('');
@@ -89,6 +99,72 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
   const [submitting, setSubmitting] = useState(false);
   
   const isRTL = language === 'ar';
+
+  // Handle navigation
+  const handleNavigate = (mode: 'list' | 'create' | 'edit' | 'detail', id?: number) => {
+    if (onNavigate) {
+      onNavigate(mode, id);
+    } else {
+      // Fallback to old modal behavior if no navigation handler provided
+      if (mode === 'create') {
+        setShowCreateForm(true);
+      } else if (mode === 'list') {
+        setShowCreateForm(false);
+        setSelectedBooking(null);
+        setShowDetailModal(false);
+      } else if (mode === 'detail' && id) {
+        const booking = bookings.find(b => b.id === id);
+        if (booking) {
+          setSelectedBooking(booking);
+          setShowDetailModal(true);
+        }
+      }
+    }
+  };
+
+  // Load selected booking when in detail/edit mode
+  useEffect(() => {
+    if ((viewMode === 'detail' || viewMode === 'edit') && selectedId && bookings.length > 0) {
+      const booking = bookings.find(b => b.id === selectedId);
+      if (booking) {
+        if (viewMode === 'detail') {
+          setSelectedBooking(booking);
+          setShowDetailModal(true);
+        } else if (viewMode === 'edit') {
+          // Handle edit mode - populate form
+          setFormData({
+            title: booking.title,
+            description: booking.description,
+            project_type: booking.project_type,
+            custom_project_type: booking.custom_project_type || '',
+            booking_date: booking.booking_date,
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            duration_hours: booking.duration_hours || 1,
+            time_preference: booking.time_preference || 'flexible',
+            equipment_needed: booking.equipment_needed || [],
+            additional_services: booking.additional_services || [],
+            crew_size: booking.crew_size || 1,
+            client_name: booking.client_name || '',
+            client_phone: booking.client_phone || '',
+            client_email: booking.client_email || '',
+            business_name: booking.business_name || '',
+            business_type: booking.business_type || '',
+            client_agreed: booking.client_agreed || false,
+            special_notes: booking.special_notes || '',
+            direct_manager_id: booking.direct_manager_id?.toString() || '',
+          });
+          setShowCreateForm(true);
+        }
+      }
+    } else if (viewMode === 'create') {
+      setShowCreateForm(true);
+    } else if (viewMode === 'list') {
+      setShowCreateForm(false);
+      setShowDetailModal(false);
+      setSelectedBooking(null);
+    }
+  }, [viewMode, selectedId, bookings]);
 
   useEffect(() => {
     loadBookings();
@@ -139,7 +215,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       special_notes: '',
       direct_manager_id: '',
     });
-    setShowCreateForm(true);
+    handleNavigate('create');
   };
 
   const handleSubmitForm = async (isDraft: boolean) => {
@@ -168,7 +244,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       }
       
       await loadBookings();
-      setShowCreateForm(false);
+      handleNavigate('list');
       alert(isRTL ? 'تم إنشاء الحجز بنجاح' : 'Booking created successfully');
     } catch (error: any) {
       console.error('Failed to create booking:', error);
@@ -184,8 +260,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
   };
 
   const handleViewDetails = (booking: StudioBooking) => {
-    setSelectedBooking(booking);
-    setShowDetailModal(true);
+    handleNavigate('detail', booking.id);
   };
 
   const handleApprove = async (bookingId: number) => {
@@ -197,7 +272,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       const status = currentUser.apiRole === 'DIRECT_MANAGER' ? 'dm_approved' : 'final_approved';
       await studioBookingsApi.updateStatus(bookingId, status);
       await loadBookings();
-      setShowDetailModal(false);
+      handleNavigate('list');
       alert(isRTL ? 'تمت الموافقة بنجاح' : 'Approved successfully');
     } catch (error: any) {
       console.error('Failed to approve:', error);
@@ -217,7 +292,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       const status = currentUser.apiRole === 'DIRECT_MANAGER' ? 'dm_rejected' : 'final_rejected';
       await studioBookingsApi.updateStatus(selectedBooking.id, status, rejectionReason);
       await loadBookings();
-      setShowDetailModal(false);
+      handleNavigate('list');
       setShowRejectModal(false);
       setRejectionReason('');
       alert(isRTL ? 'تم الرفض بنجاح' : 'Rejected successfully');
@@ -239,6 +314,25 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
 
   const canReject = (booking: StudioBooking) => {
     return canApprove(booking);
+  };
+
+  const handleDownloadPdf = async (bookingId: number) => {
+    if (downloading) return;
+    
+    setDownloading(true);
+    try {
+      // Fetch the booking data for print view
+      const response = await studioBookingsApi.downloadPdf(bookingId);
+      if (response.success && response.data) {
+        setSelectedBooking(response.data);
+        setShowPrintView(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to load print view:', error);
+      alert(error?.response?.data?.error?.message || (language === 'ar' ? 'فشل في تحميل بيانات الحجز' : 'Failed to load booking data'));
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -296,8 +390,11 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="mb-6">
+      {/* Main List View */}
+      {viewMode === 'list' && (
+        <>
+          {/* Header */}
+          <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-indigo-600 rounded-lg">
@@ -323,7 +420,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -433,7 +530,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBookings.map((booking) => (
             <div
               key={booking.id}
@@ -481,6 +578,14 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                   <Eye className="w-4 h-4" />
                   {isRTL ? 'عرض' : 'View'}
                 </button>
+                <button
+                  onClick={() => handleDownloadPdf(booking.id)}
+                  disabled={downloading}
+                  className="px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={isRTL ? 'تحميل PDF' : 'Download PDF'}
+                >
+                  <Download className="w-4 h-4" />
+                </button>
                 {canApprove(booking) && (
                   <button
                     onClick={() => handleApprove(booking.id)}
@@ -505,33 +610,35 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
           ))}
         </div>
       )}
+      </>
+      )}
 
       {/* Create Form Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" dir={isRTL ? 'rtl' : 'ltr'}>
-          <div className="bg-white rounded-lg w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 border-b pb-4">
+      {(viewMode === 'create' || viewMode === 'edit') && (
+        <div className="bg-gray-50 min-h-screen w-full overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="w-full">
+            <div className="sticky top-0 bg-white border-b px-4 md:px-6 py-4 flex justify-between items-center shadow-sm z-10">
               <div>
-                <h2 className="text-2xl font-bold text-indigo-900">
+                <h2 className="text-xl md:text-2xl font-bold text-indigo-900">
                   {isRTL ? 'نموذج طلب تصوير في مقر أكشن جروب' : 'Studio Booking Request Form'}
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {isRTL ? 'Action Group Studio' : 'Action Group Studio'}
                 </p>
               </div>
-              <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-6 h-6" />
+              <button onClick={() => handleNavigate('list')} className="text-gray-500 hover:text-gray-700 transition-colors">
+                <X className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </div>
-
-            <div className="space-y-6">
+            <div className="w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-6">
               {/* General Information Section */}
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border-l-4 border-indigo-600">
-                <h3 className="text-lg font-bold text-indigo-900 mb-4">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 md:p-6 rounded-lg border-l-4 border-indigo-600 shadow-sm">
+                <h3 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5" />
                   {isRTL ? 'المعلومات العامة' : 'General Information'}
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'اسم العميل' : 'Client Name'} <span className="text-red-500">*</span>
@@ -584,7 +691,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                     />
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div className="lg:col-span-2 xl:col-span-3">
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'نوع النشاط' : 'Business Type'}
                     </label>
@@ -592,7 +699,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                       type="text"
                       value={formData.business_type}
                       onChange={(e) => setFormData({...formData, business_type: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       placeholder={isRTL ? 'مثلاً: تجميل - مجوهرات - مطاعم - شركات - أفراد' : 'e.g., Beauty - Jewelry - Restaurants - Companies - Individuals'}
                     />
                   </div>
@@ -600,12 +707,13 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
               </div>
 
               {/* Shooting Details Section */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border-l-4 border-purple-600">
-                <h3 className="text-lg font-bold text-purple-900 mb-4">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 md:p-6 rounded-lg border-l-4 border-purple-600 shadow-sm">
+                <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
                   {isRTL ? 'تفاصيل التصوير' : 'Shooting Details'}
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-4 md:space-y-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'العنوان' : 'Title'} <span className="text-red-500">*</span>
@@ -632,7 +740,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-sm font-semibold mb-2 text-gray-700">
                         {isRTL ? 'نوع التصوير المطلوب' : 'Project Type'} <span className="text-red-500">*</span>
@@ -640,7 +748,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                       <select
                         value={formData.project_type}
                         onChange={(e) => setFormData({...formData, project_type: e.target.value as any})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                       >
                         <option value="videography">{isRTL ? 'تصوير فيديو إعلاني' : 'Commercial Video'}</option>
                         <option value="product_photography">{isRTL ? 'تصوير منتجات' : 'Product Photography'}</option>
@@ -701,7 +809,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                     <label className="block text-sm font-semibold mb-3 text-gray-700">
                       {isRTL ? 'هل تحتاج إلى تجهيزات إضافية؟' : 'Additional Services Needed?'}
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
                       {[
                         { value: 'special_lighting', label: isRTL ? 'إضاءة خاصة' : 'Special Lighting' },
                         { value: 'makeup', label: isRTL ? 'مكياج' : 'Makeup' },
@@ -736,12 +844,13 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
               </div>
 
               {/* Scheduling Section */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg border-l-4 border-blue-600">
-                <h3 className="text-lg font-bold text-blue-900 mb-4">
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 md:p-6 rounded-lg border-l-4 border-blue-600 shadow-sm">
+                <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
                   {isRTL ? 'الجدولة' : 'Scheduling'}
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'التاريخ المقترح للتصوير' : 'Booking Date'} <span className="text-red-500">*</span>
@@ -779,7 +888,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'الوقت المقترح' : 'Time Preference'}
@@ -872,7 +981,7 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                   {isRTL ? 'حفظ كمسودة' : 'Save as Draft'}
                 </button>
                 <button
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={() => handleNavigate('list')}
                   className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-all"
                 >
                   {isRTL ? 'إلغاء' : 'Cancel'}
@@ -884,20 +993,20 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
       )}
 
       {/* Detail Modal with Approval Flow */}
-      {showDetailModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" dir={isRTL ? 'rtl' : 'ltr'}>
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between z-10">
+      {viewMode === 'detail' && selectedBooking && (
+        <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="w-full min-h-screen">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-10">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{selectedBooking.title}</h2>
                 <p className="text-sm text-gray-500 mt-1">{selectedBooking.request_id}</p>
               </div>
-              <button onClick={() => setShowDetailModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => handleNavigate('list')} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
               {/* Approval Flow Timeline */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -1048,10 +1157,9 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      studioBookingsApi.downloadPdf(selectedBooking.id).catch(err => console.error(err));
-                    }}
-                    className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors font-semibold flex items-center gap-2"
+                    onClick={() => handleDownloadPdf(selectedBooking.id)}
+                    disabled={downloading}
+                    className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Download className="w-4 h-4" />
                     {isRTL ? 'تحميل' : 'Download'}
@@ -1074,8 +1182,8 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
 
       {/* Reject Modal */}
       {showRejectModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" dir={isRTL ? 'rtl' : 'ltr'}>
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-[60]" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-xl border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">{isRTL ? 'سبب الرفض' : 'Rejection Reason'}</h3>
               <button onClick={() => setShowRejectModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -1108,6 +1216,19 @@ const StudioBookingManagement: React.FC<StudioBookingManagementProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Print View */}
+      {showPrintView && selectedBooking && (
+        <StudioBookingPrintView
+          booking={selectedBooking}
+          language={language}
+          t={t}
+          onClose={() => {
+            setShowPrintView(false);
+            setSelectedBooking(null);
+          }}
+        />
       )}
     </div>
   );

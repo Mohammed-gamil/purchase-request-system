@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { authService } from "@/lib/auth";
-import { approvalsApi, requestsApi, adminApi, apiClient, notificationsApi } from "@/lib/api";
+import { approvalsApi, requestsApi, adminApi, apiClient, notificationsApi, inventoryRequestsApi, studioBookingsApi, visitsApi, inventoryApi } from "@/lib/api";
 import InventoryManagement from "@/pages/InventoryManagement";
 import SalesVisitManagement from "@/pages/SalesVisitManagement";
 import InventoryRequestManagement from "@/pages/InventoryRequestManagement";
@@ -1131,18 +1131,21 @@ function LoginView({
 
   return (
   <div className={clsx("min-h-screen grid place-items-center bg-gradient-to-br from-background to-secondary/30", isAr && "text-right")}> 
-  <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+  <div className="w-full max-w-md lg:max-w-lg rounded-2xl border border-border bg-card p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
         <div className="mb-6">
           <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-warning grid place-items-center font-extrabold text-white text-2xl shadow-lg mb-4 mx-auto">A</div>
           <h1 className="text-2xl font-bold tracking-tight text-center">{t("loginTitle")}</h1>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-2 block text-sm font-bold text-primary">
+            <label htmlFor="login-identifier" className="mb-2 block text-sm font-bold text-primary">
               {t("emailOrUsername")}
             </label>
             <input
+              id="login-identifier"
+              name="identifier"
               type="text"
+              autoComplete="username"
               placeholder="your.email@example.com"
               className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               value={identifier}
@@ -1151,9 +1154,12 @@ function LoginView({
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-bold text-primary">{t("password")}</label>
+            <label htmlFor="login-password" className="mb-2 block text-sm font-bold text-primary">{t("password")}</label>
             <input
+              id="login-password"
+              name="password"
               type="password"
+              autoComplete="current-password"
               placeholder="Enter your password"
               className="w-full rounded-lg border-2 border-border bg-background px-4 py-3 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               value={password}
@@ -2169,12 +2175,12 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
          </div>
         <div className="mt-4 space-y-3">
           {items.map((it, idx) => (
-            <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 p-2 md:p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
+            <div key={idx} className="grid grid-cols-1 lg:grid-cols-12 gap-2 md:gap-3 p-2 md:p-3 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors">
               <input
                 placeholder="Item name (e.g., Laptop, Office Chair)"
                 value={it.name}
                 onChange={(e) => updateItem(idx, { name: e.target.value })}
-                className="md:col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+                className="lg:col-span-5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
               <input
                 type="number"
@@ -2182,9 +2188,9 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
                 placeholder="Qty"
                 value={it.quantity}
                 onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) || 0 })}
-                className="md:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
+                className="lg:col-span-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
               />
-              <div className="md:col-span-4 relative">
+              <div className="lg:col-span-4 relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-subtext">SAR</span>
                 <input
                   type="number"
@@ -2196,8 +2202,8 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
                   className="w-full rounded-lg border border-border bg-background pl-12 pr-3 py-2 text-sm font-bold shadow-sm focus:border-warning focus:outline-none focus:ring-2 focus:ring-warning/20 transition-colors duration-200"
                 />
               </div>
-              <div className="md:col-span-1 flex items-center justify-end">
-                <button type="button" onClick={() => removeItem(idx)} className="w-full md:w-auto rounded-lg border border-red-200 bg-red-50 px-3 md:px-2 py-1.5 md:py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
+              <div className="lg:col-span-1 flex items-center justify-end">
+                <button type="button" onClick={() => removeItem(idx)} className="w-full lg:w-auto rounded-lg border border-red-200 bg-red-50 px-3 lg:px-2 py-1.5 lg:py-1 text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-300 transition-all duration-200" title="Remove item">
                   ×
                 </button>
               </div>
@@ -2234,6 +2240,468 @@ const [directManagerId, setDirectManagerId] = useState<string>("");
         </div>
       </div>
     </form>
+  );
+}
+
+// Dashboard Component
+function DashboardView({
+  language,
+  currentUser,
+  requests,
+  stats,
+  formatCurrency,
+  clsx,
+  navigateToSection,
+}: {
+  language: Language;
+  currentUser: User;
+  requests: PurchaseRequest[];
+  stats: { total: number; pending: number; approved: number; rejected: number; totalCost: number; avgCost: number; thisWeek: number };
+  formatCurrency: (n: number, lang: Language) => string;
+  clsx: (...args: Array<string | false | null | undefined>) => string;
+  navigateToSection: (section: string) => void;
+}) {
+  const [moduleStats, setModuleStats] = useState({
+    inventory: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    inventoryRequests: { total: 0, pending: 0, approved: 0, returned: 0 },
+    studioBookings: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    salesVisits: { total: 0, pending: 0, approved: 0, completed: 0 },
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadModuleStats();
+  }, []);
+
+  const loadModuleStats = async () => {
+    setLoading(true);
+    try {
+      // Load stats from all modules
+      const [invReqStats, studioStats] = await Promise.all([
+        inventoryRequestsApi.getStats().catch(() => ({ total: 0, pending: 0, approved: 0, returned: 0 })),
+        studioBookingsApi.getStats().catch(() => ({ total: 0, pending: 0, approved: 0, rejected: 0 })),
+      ]);
+
+      // Load inventory items count
+      const inventoryResponse = await inventoryApi.getItems().catch(() => ({ data: [] }));
+      const inventoryItems = inventoryResponse.data || [];
+      
+      // Load sales visits
+      const visitsResponse = await visitsApi.getVisits({ per_page: 1000 }).catch(() => ({ data: [] }));
+      const visits = visitsResponse.data || [];
+      
+      setModuleStats({
+        inventory: {
+          total: inventoryItems.length,
+          pending: inventoryItems.filter((i: any) => !i.is_active).length,
+          approved: inventoryItems.filter((i: any) => i.is_active && i.is_in_stock).length,
+          rejected: inventoryItems.filter((i: any) => !i.is_in_stock).length,
+        },
+        inventoryRequests: invReqStats,
+        studioBookings: studioStats,
+        salesVisits: {
+          total: visits.length,
+          pending: visits.filter((v: any) => v.status === 'pending_review').length,
+          approved: visits.filter((v: any) => v.status === 'approved').length,
+          completed: visits.filter((v: any) => v.status === 'completed').length,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to load module stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isRTL = language === 'ar';
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          {isRTL ? 'لوحة القيادة' : 'Dashboard'}
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          {isRTL ? 'نظرة عامة على جميع الأنظمة' : 'Overview of all systems'}
+        </p>
+      </div>
+
+      {/* Purchase Requests Stats */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          {isRTL ? 'طلبات الشراء' : 'Purchase Requests'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToSection('requests')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-blue-500/10 text-blue-500 grid place-items-center">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'إجمالي الطلبات' : 'Total Requests'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-yellow-500/10 text-yellow-500 grid place-items-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats.pending}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'قيد الانتظار' : 'Pending'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
+                <CheckSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{stats.approved}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'موافق عليها' : 'Approved'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-indigo-500/10 text-indigo-500 grid place-items-center">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalCost, language)}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'التكلفة الإجمالية' : 'Total Cost'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Stats */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          {isRTL ? 'المخزون' : 'Inventory'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToSection('inventory')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-purple-500/10 text-purple-500 grid place-items-center">
+                <Package className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventory.total}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'إجمالي العناصر' : 'Total Items'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
+                <CheckSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventory.approved}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'متوفر' : 'In Stock'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-orange-500/10 text-orange-500 grid place-items-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventory.pending}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'غير نشط' : 'Inactive'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-red-500/10 text-red-500 grid place-items-center">
+                <X className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventory.rejected}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'غير متوفر' : 'Out of Stock'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Requests Stats */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5" />
+          {isRTL ? 'طلبات المخزون' : 'Inventory Requests'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToSection('inventory-requests')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-teal-500/10 text-teal-500 grid place-items-center">
+                <FileSpreadsheet className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventoryRequests.total}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'إجمالي الطلبات' : 'Total Requests'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-yellow-500/10 text-yellow-500 grid place-items-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventoryRequests.pending}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'قيد الانتظار' : 'Pending'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
+                <CheckSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventoryRequests.approved}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'موافق عليها' : 'Approved'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-blue-500/10 text-blue-500 grid place-items-center">
+                <Calendar className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.inventoryRequests.returned}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'مُرتجع' : 'Returned'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Studio Bookings Stats */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Camera className="h-5 w-5" />
+          {isRTL ? 'حجوزات الاستوديو' : 'Studio Bookings'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToSection('studio-bookings')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-pink-500/10 text-pink-500 grid place-items-center">
+                <Camera className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.studioBookings.total}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'إجمالي الحجوزات' : 'Total Bookings'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-yellow-500/10 text-yellow-500 grid place-items-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.studioBookings.pending}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'قيد الانتظار' : 'Pending'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
+                <CheckSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.studioBookings.approved}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'موافق عليها' : 'Approved'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-red-500/10 text-red-500 grid place-items-center">
+                <X className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.studioBookings.rejected}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'مرفوضة' : 'Rejected'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sales Visits Stats */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          {isRTL ? 'زيارات المبيعات' : 'Sales Visits'}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigateToSection('sales-visits')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-cyan-500/10 text-cyan-500 grid place-items-center">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.salesVisits.total}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'إجمالي الزيارات' : 'Total Visits'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-yellow-500/10 text-yellow-500 grid place-items-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.salesVisits.pending}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'قيد المراجعة' : 'Pending Review'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-green-500/10 text-green-500 grid place-items-center">
+                <CheckSquare className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.salesVisits.approved}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'موافق عليها' : 'Approved'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-blue-500/10 text-blue-500 grid place-items-center">
+                <Calendar className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{moduleStats.salesVisits.completed}</div>
+                <div className="text-sm text-gray-600">{isRTL ? 'مكتملة' : 'Completed'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity & Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">{isRTL ? 'النشاط الأخير' : 'Recent Activity'}</h3>
+            <Activity className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="space-y-2">
+            {requests.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">{isRTL ? 'لا يوجد نشاط حديث' : 'No recent activity'}</p>
+            ) : (
+              requests.slice(0, 5).map(r => (
+                <div key={r.id} className="flex items-center justify-between text-sm border-b border-gray-200 pb-2 last:border-0">
+                  <span className="truncate flex-1">{r.title}</span>
+                  <span className={clsx(
+                    "px-2 py-1 rounded text-xs font-semibold",
+                    r.status === "Approved" ? "bg-green-500/20 text-green-700" :
+                    r.status === "Pending" ? "bg-yellow-500/20 text-yellow-700" :
+                    r.status === "Rejected" ? "bg-red-500/20 text-red-700" :
+                    "bg-blue-500/20 text-blue-700"
+                  )}>
+                    {r.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">{isRTL ? 'التحليلات' : 'Overall Analytics'}</h3>
+            <BarChart3 className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>{isRTL ? 'معدل الموافقة' : 'Approval Rate'}</span>
+                <span className="font-semibold">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full" 
+                  style={{ width: `${stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%` }}
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>{isRTL ? 'معدل الانتظار' : 'Pending Rate'}</span>
+                <span className="font-semibold">{stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-yellow-500 h-2 rounded-full" 
+                  style={{ width: `${stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0}%` }}
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>{isRTL ? 'معدل الرفض' : 'Rejection Rate'}</span>
+                <span className="font-semibold">{stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-red-500 h-2 rounded-full" 
+                  style={{ width: `${stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -2717,8 +3185,12 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
   return (
     <form onSubmit={submit} className="space-y-3">
       <div>
-        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userName')}</label>
-        <input 
+        <label htmlFor="admin-user-name" className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userName')}</label>
+        <input
+          id="admin-user-name"
+          name="name"
+          type="text"
+          autoComplete="name"
           value={name} 
           onChange={(e)=>setName(e.target.value)} 
           placeholder="Enter full name" 
@@ -2726,9 +3198,12 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userEmail')}</label>
-        <input 
+        <label htmlFor="admin-user-email" className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">{t('userEmail')}</label>
+        <input
+          id="admin-user-email"
+          name="email"
           type="email"
+          autoComplete="email"
           value={email} 
           onChange={(e)=>setEmail(e.target.value)} 
           placeholder="user@example.com" 
@@ -2736,9 +3211,12 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-bold text-warning uppercase tracking-wide">{t('userPassword')}</label>
-        <input 
-          type="password" 
+        <label htmlFor="admin-user-password" className="mb-1 block text-xs font-bold text-warning uppercase tracking-wide">{t('userPassword')}</label>
+        <input
+          id="admin-user-password"
+          name="password"
+          type="password"
+          autoComplete="new-password" 
           value={password} 
           onChange={(e)=>setPassword(e.target.value)} 
           placeholder="Min. 8 characters" 
@@ -2746,8 +3224,10 @@ function AdminCreateUserForm({ t, onCreated }: { t: (k: string) => string; onCre
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">Role</label>
-        <select 
+        <label htmlFor="admin-user-role" className="mb-1 block text-xs font-bold text-primary uppercase tracking-wide">Role</label>
+        <select
+          id="admin-user-role"
+          name="role"
           value={role} 
           onChange={(e)=>setRole(e.target.value)} 
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors duration-200"
@@ -2795,10 +3275,30 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [view, setView] = useState<"detail" | "creating" | "creatingProject">("detail");
-  const [section, setSection] = useState<"requests" | "inventory" | "admin" | "sales-visits">("requests");
+  const [section, setSection] = useState<"requests" | "inventory" | "admin" | "sales-visits" | "inventory-requests" | "studio-bookings" | "dashboard">("requests");
+  const [subSection, setSubSection] = useState<string>("");  // For create/edit/view routes
+  const [routeParams, setRouteParams] = useState<Record<string, any>>({});  // For route parameters
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Navigation helper for sub-routes
+  const handleSubNavigation = (sectionName: string, mode: string, id?: number) => {
+    // Ensure the section is active
+    if (section !== sectionName) {
+      setSection(sectionName as typeof section);
+    }
+    setSubSection(mode);
+    setRouteParams({ id });
+  };
+
+  // Navigate to main section and reset sub-routes
+  const navigateToSection = (newSection: typeof section) => {
+    setSection(newSection);
+    setSubSection('');
+    setRouteParams({});
+  };
+
   // Filters
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatuses, setFilterStatuses] = useState<Array<PurchaseRequest["status"]>>([]);
@@ -2808,7 +3308,7 @@ const App: React.FC = () => {
   const [filterMinCost, setFilterMinCost] = useState<string>("");
   const [filterMaxCost, setFilterMaxCost] = useState<string>("");
   const [filterAssignedToMe, setFilterAssignedToMe] = useState<boolean>(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // Start collapsed on mobile
   const [adminUsers, setAdminUsers] = useState<Array<any>>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
@@ -2844,7 +3344,6 @@ const App: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const [showDashboard, setShowDashboard] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Array<{
@@ -2921,6 +3420,25 @@ const App: React.FC = () => {
     }
   }, [currentUser, section]);
 
+  // Validate token on app startup
+  useEffect(() => {
+    const validateAuth = async () => {
+      if (currentUser && localStorage.getItem(LS_KEYS.token)) {
+        try {
+          // Try to fetch current user to validate token
+          await authService.getCurrentUser();
+        } catch (e: any) {
+          // If token is invalid, logout
+          if (e?.response?.status === 401) {
+            console.warn('Token validation failed, logging out...');
+            handleLogout();
+          }
+        }
+      }
+    };
+    validateAuth();
+  }, []); // Run once on mount
+
   // Initial data load on first login
   useEffect(() => {
     if (!currentUser) return;
@@ -2957,14 +3475,29 @@ const App: React.FC = () => {
           data = Array.isArray(pend.data) ? pend.data : data;
         }
         setRequests(data.map(mapApiRequestToUi));
-      } catch (e) {
+      } catch (e: any) {
         console.error("Failed to load requests", e);
-        setRequests([]);
+        // If 401, the interceptor will handle logout via event
+        if (e?.response?.status !== 401) {
+          setRequests([]);
+          addToast('error', language === 'ar' ? 'فشل تحميل الطلبات' : 'Failed to load requests');
+        }
       } finally {
         setIsLoading(false);
       }
     })();
-  }, [currentUser]);
+  }, [currentUser, language]);
+
+  // Listen for unauthorized events (401 errors)
+  useEffect(() => {
+    function onUnauthorized() {
+      console.warn('Unauthorized access detected, logging out...');
+      handleLogout();
+      addToast('error', language === 'ar' ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : 'Session expired. Please log in again.');
+    }
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, [language]);
 
   // Listen for admin deletions from RequestDetailView
   useEffect(() => {
@@ -3026,7 +3559,10 @@ const App: React.FC = () => {
   function handleLogout() {
     setCurrentUser(null);
     setSelectedRequest(null);
+    setRequests([]);
     localStorage.removeItem(LS_KEYS.token);
+    // Call auth service to properly clear token
+    authService.logout().catch(e => console.error('Logout error:', e));
   }
   function handleLogin(user: User) {
     setCurrentUser(user);
@@ -3751,18 +4287,47 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Mobile Top Menu Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-warning text-warning-foreground grid place-items-center font-extrabold shadow-sm">A</div>
+            <span className="text-lg font-bold tracking-tight">{t("appTitle")}</span>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="rounded-lg p-2 hover:bg-secondary transition-colors"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-[70]"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div
         className={clsx(
-          "fixed top-0 h-full bg-card shadow-xl transition-all duration-300 z-[60] flex flex-col",
-          language === "ar" ? "left-0 border-r border-border" : "left-0 border-r border-border",
-          sidebarOpen ? "w-64" : "w-16"
+          "fixed top-0 h-full bg-card shadow-xl transition-all duration-300 flex flex-col",
+          "md:z-[60] z-[80]",
+          language === "ar" ? "border-l border-border" : "border-r border-border",
+          // Mobile: slide in/out
+          "md:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          // Desktop: icon-only or full width
+          sidebarOpen ? "w-64 md:w-64" : "w-64 md:w-16"
         )}
-        style={language === "ar" ? { left: 'auto', right: 0 } : {}}
+        style={language === "ar" ? { right: 0 } : { left: 0 }}
       >
-        {/* Sidebar Header */}
+        {/* Sidebar Header - Desktop Only */}
         <div className={clsx(
-          "flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-warning/10 to-primary/10",
+          "hidden md:flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-warning/10 to-primary/10",
           language === "ar" && "flex-row-reverse"
         )}>
           {sidebarOpen && (
@@ -3776,6 +4341,23 @@ const App: React.FC = () => {
             className="rounded-lg p-2 hover:bg-secondary transition-colors"
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Mobile Sidebar Header */}
+        <div className={clsx(
+          "md:hidden flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-warning/10 to-primary/10",
+          language === "ar" && "flex-row-reverse"
+        )}>
+          <div className={clsx("flex items-center gap-2", language === "ar" && "flex-row-reverse")}>
+            <div className="h-8 w-8 rounded-lg bg-warning text-warning-foreground grid place-items-center font-extrabold shadow-sm">A</div>
+            <span className="text-lg font-bold tracking-tight">{t("appTitle")}</span>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-lg p-2 hover:bg-secondary transition-colors"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -3797,11 +4379,14 @@ const App: React.FC = () => {
 
           {/* Dashboard Button */}
           <button
-            onClick={() => setShowDashboard(!showDashboard)}
+            onClick={() => {
+              navigateToSection("dashboard");
+              if (window.innerWidth < 768) setSidebarOpen(false);
+            }}
             className={clsx(
-              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+              "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
               language === "ar" && "flex-row-reverse",
-              showDashboard ? "bg-primary/20 text-primary shadow-md" : "hover:bg-primary/10 text-foreground"
+              section === "dashboard" ? "bg-primary/20 text-primary shadow-md" : "hover:bg-primary/10 text-foreground"
             )}
             title={language === "ar" ? "لوحة القيادة" : "Dashboard"}
           >
@@ -3890,9 +4475,10 @@ const App: React.FC = () => {
                 setView("creating");
                 setSelectedRequest(null);
                 setSection("requests");
+                if (window.innerWidth < 768) setSidebarOpen(false);
               }}
               className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
                 language === "ar" && "flex-row-reverse",
                 view === "creating" ? "bg-warning text-warning-foreground shadow-md" : "hover:bg-warning/10 text-foreground"
               )}
@@ -3909,9 +4495,10 @@ const App: React.FC = () => {
                 setView("creatingProject");
                 setSelectedRequest(null);
                 setSection("requests");
+                if (window.innerWidth < 768) setSidebarOpen(false);
               }}
               className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
                 language === "ar" && "flex-row-reverse",
                 view === "creatingProject" ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10 text-foreground"
               )}
@@ -3930,9 +4517,10 @@ const App: React.FC = () => {
               onClick={() => {
                 setSection("requests");
                 setView("detail");
+                if (window.innerWidth < 768) setSidebarOpen(false);
               }}
               className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
+                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
                 language === "ar" && "flex-row-reverse",
                 section === "requests" 
                   ? clsx(
@@ -3950,99 +4538,195 @@ const App: React.FC = () => {
           )}
 
           {(currentUser.apiRole === "DIRECT_MANAGER" || currentUser.apiRole === "FINAL_MANAGER" || currentUser.apiRole === "ADMIN") && (
-            <button
-              onClick={() => {
-                setSection("inventory");
-                setView("detail");
-              }}
-              className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                language === "ar" && "flex-row-reverse",
-                section === "inventory" 
-                  ? clsx(
-                      "bg-warning/20 text-warning",
-                      language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
-                    )
-                  : "hover:bg-secondary text-foreground"
+            <>
+              <button
+                onClick={() => {
+                  setSection("inventory");
+                  setView("detail");
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className={clsx(
+                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
+                  language === "ar" && "flex-row-reverse",
+                  section === "inventory" 
+                    ? clsx(
+                        "bg-warning/20 text-warning",
+                        language === "ar" ? "border-r-4 border-warning" : "border-l-4 border-warning"
+                      )
+                    : "hover:bg-secondary text-foreground"
+                )}
+                title={t("inventory")}
+              >
+                <Settings className="h-5 w-5 shrink-0" />
+                {sidebarOpen && <span>{t("inventory")}</span>}
+                {sidebarOpen && section === "inventory" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+              </button>
+              
+              {/* Inventory Sub-Actions */}
+              {sidebarOpen && section === "inventory" && (
+                <div className={clsx("ml-8 space-y-1", language === "ar" && "mr-8 ml-0")}>
+                  <button
+                    onClick={() => {
+                      handleSubNavigation("inventory", "create");
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={clsx(
+                      "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all hover:scale-[1.02]",
+                      language === "ar" && "flex-row-reverse",
+                      "hover:bg-warning/10 text-foreground"
+                    )}
+                    title={language === 'ar' ? 'إضافة عنصر جديد' : 'Add New Item'}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{language === 'ar' ? 'إضافة عنصر' : 'Add Item'}</span>
+                  </button>
+                </div>
               )}
-              title={t("inventory")}
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{t("inventory")}</span>}
-              {sidebarOpen && section === "inventory" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-            </button>
+            </>
           )}
 
           {currentUser.apiRole !== "SALES_REP" && (
-            <button
-              onClick={() => {
-                setSection("inventory-requests");
-                setView("detail");
-              }}
-              className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                language === "ar" && "flex-row-reverse",
-                section === "inventory-requests" 
-                  ? clsx(
-                      "bg-orange-500/20 text-orange-500",
-                      language === "ar" ? "border-r-4 border-orange-500" : "border-l-4 border-orange-500"
-                    )
-                  : "hover:bg-secondary text-foreground"
+            <>
+              <button
+                onClick={() => {
+                  setSection("inventory-requests");
+                  setView("detail");
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className={clsx(
+                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
+                  language === "ar" && "flex-row-reverse",
+                  section === "inventory-requests" 
+                    ? clsx(
+                        "bg-orange-500/20 text-orange-500",
+                        language === "ar" ? "border-r-4 border-orange-500" : "border-l-4 border-orange-500"
+                      )
+                    : "hover:bg-secondary text-foreground"
+                )}
+                title={language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}
+              >
+                <Package className="h-5 w-5 shrink-0" />
+                {sidebarOpen && <span>{language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}</span>}
+                {sidebarOpen && section === "inventory-requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+              </button>
+              
+              {/* Inventory Requests Sub-Actions */}
+              {sidebarOpen && section === "inventory-requests" && (
+                <div className={clsx("ml-8 space-y-1", language === "ar" && "mr-8 ml-0")}>
+                  <button
+                    onClick={() => {
+                      handleSubNavigation("inventory-requests", "create");
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={clsx(
+                      "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all hover:scale-[1.02]",
+                      language === "ar" && "flex-row-reverse",
+                      "hover:bg-orange-500/10 text-foreground"
+                    )}
+                    title={language === 'ar' ? 'طلب جديد' : 'New Request'}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{language === 'ar' ? 'طلب جديد' : 'New Request'}</span>
+                  </button>
+                </div>
               )}
-              title={language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}
-            >
-              <Package className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{language === 'ar' ? 'طلبات المخزون' : 'Inventory Requests'}</span>}
-              {sidebarOpen && section === "inventory-requests" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-            </button>
+            </>
           )}
 
           {currentUser.apiRole !== "SALES_REP" && (
-            <button
-              onClick={() => {
-                setSection("studio-bookings");
-                setView("detail");
-              }}
-              className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                language === "ar" && "flex-row-reverse",
-                section === "studio-bookings" 
-                  ? clsx(
-                      "bg-indigo-500/20 text-indigo-500",
-                      language === "ar" ? "border-r-4 border-indigo-500" : "border-l-4 border-indigo-500"
-                    )
-                  : "hover:bg-secondary text-foreground"
+            <>
+              <button
+                onClick={() => {
+                  setSection("studio-bookings");
+                  setView("detail");
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className={clsx(
+                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
+                  language === "ar" && "flex-row-reverse",
+                  section === "studio-bookings" 
+                    ? clsx(
+                        "bg-indigo-500/20 text-indigo-500",
+                        language === "ar" ? "border-r-4 border-indigo-500" : "border-l-4 border-indigo-500"
+                      )
+                    : "hover:bg-secondary text-foreground"
+                )}
+                title={language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}
+              >
+                <Camera className="h-5 w-5 shrink-0" />
+                {sidebarOpen && <span>{language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}</span>}
+                {sidebarOpen && section === "studio-bookings" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+              </button>
+              
+              {/* Studio Bookings Sub-Actions */}
+              {sidebarOpen && section === "studio-bookings" && (
+                <div className={clsx("ml-8 space-y-1", language === "ar" && "mr-8 ml-0")}>
+                  <button
+                    onClick={() => {
+                      handleSubNavigation("studio-bookings", "create");
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={clsx(
+                      "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all hover:scale-[1.02]",
+                      language === "ar" && "flex-row-reverse",
+                      "hover:bg-indigo-500/10 text-foreground"
+                    )}
+                    title={language === 'ar' ? 'حجز جديد' : 'New Booking'}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{language === 'ar' ? 'حجز جديد' : 'New Booking'}</span>
+                  </button>
+                </div>
               )}
-              title={language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}
-            >
-              <Camera className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{language === 'ar' ? 'حجوزات الاستوديو' : 'Studio Bookings'}</span>}
-              {sidebarOpen && section === "studio-bookings" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-            </button>
+            </>
           )}
 
           {(currentUser.apiRole === "ADMIN" || currentUser.apiRole === "SUPER_ADMIN" || currentUser.apiRole === "SALES_REP" || currentUser.role === "manager" || currentUser.role === "sales") && (
-            <button
-              onClick={() => {
-                setSection("sales-visits");
-                setView("detail");
-              }}
-              className={clsx(
-                "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200",
-                language === "ar" && "flex-row-reverse",
-                section === "sales-visits" 
-                  ? clsx(
-                      "bg-primary/20 text-primary",
-                      language === "ar" ? "border-r-4 border-primary" : "border-l-4 border-primary"
-                    )
-                  : "hover:bg-secondary text-foreground"
+            <>
+              <button
+                onClick={() => {
+                  navigateToSection("sales-visits");
+                  setView("detail");
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className={clsx(
+                  "w-full flex items-center gap-3 rounded-lg p-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02]",
+                  language === "ar" && "flex-row-reverse",
+                  section === "sales-visits" 
+                    ? clsx(
+                        "bg-primary/20 text-primary",
+                        language === "ar" ? "border-r-4 border-primary" : "border-l-4 border-primary"
+                      )
+                    : "hover:bg-secondary text-foreground"
+                )}
+                title={t("salesVisits")}
+              >
+                <Users className="h-5 w-5 shrink-0" />
+                {sidebarOpen && <span>{t("salesVisits")}</span>}
+                {sidebarOpen && section === "sales-visits" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
+              </button>
+              
+              {/* Sales Visits Sub-Actions */}
+              {sidebarOpen && section === "sales-visits" && (
+                <div className={clsx("ml-8 space-y-1", language === "ar" && "mr-8 ml-0")}>
+                  <button
+                    onClick={() => {
+                      handleSubNavigation("sales-visits", "create");
+                      if (window.innerWidth < 768) setSidebarOpen(false);
+                    }}
+                    className={clsx(
+                      "w-full flex items-center gap-2 rounded-lg p-2 text-sm transition-all hover:scale-[1.02]",
+                      language === "ar" && "flex-row-reverse",
+                      "hover:bg-primary/10 text-foreground"
+                    )}
+                    title={language === 'ar' ? 'زيارة جديدة' : 'New Visit'}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{language === 'ar' ? 'زيارة جديدة' : 'New Visit'}</span>
+                  </button>
+                </div>
               )}
-              title={t("salesVisits")}
-            >
-              <Users className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{t("salesVisits")}</span>}
-              {sidebarOpen && section === "sales-visits" && <ChevronRight className={clsx("h-4 w-4", language === "ar" ? "mr-auto" : "ml-auto")} />}
-            </button>
+            </>
           )}
 
           {/* Filters Toggle */}
@@ -4144,11 +4828,14 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <div 
-        className="flex-1 transition-all duration-300 min-h-screen"
-        style={language === "ar" 
-          ? (sidebarOpen ? { marginRight: window.innerWidth >= 768 ? '18rem' : '16rem' } : { marginRight: window.innerWidth >= 768 ? '5rem' : '4rem' })
-          : (sidebarOpen ? { marginLeft: window.innerWidth >= 768 ? '18rem' : '16rem' } : { marginLeft: window.innerWidth >= 768 ? '5rem' : '4rem' })
-        }
+        className={clsx(
+          "flex-1 transition-all duration-300 min-h-screen",
+          "pt-16 md:pt-0", // Add top padding on mobile for fixed menu bar
+          // Responsive margin based on sidebar state
+          language === "ar" 
+            ? (sidebarOpen ? "md:mr-64" : "md:mr-16")
+            : (sidebarOpen ? "md:ml-64" : "md:ml-16")
+        )}
       >
         {/* Top Navbar - Simplified */}
         <div className="sticky top-0 z-40 backdrop-blur-sm bg-card/80 border-b border-border shadow-sm">
@@ -4168,8 +4855,8 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className="px-3 sm:px-4 md:px-6 lg:px-8 pb-8 md:pb-10 pt-3 md:pt-4">
-          {/* Dashboard View */}
-          {showDashboard && section === "requests" && (
+          {/* Old Dashboard View - Removed, now using dedicated Dashboard page */}
+          {false && (
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <div className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3">
@@ -4314,14 +5001,52 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {section === "inventory" ? (
-            <InventoryManagement language={language} currentUser={currentUser} t={t} />
+          {section === "dashboard" ? (
+            <DashboardView 
+              language={language}
+              currentUser={currentUser}
+              requests={requests}
+              stats={stats}
+              formatCurrency={formatCurrency}
+              clsx={clsx}
+              navigateToSection={navigateToSection}
+            />
+          ) : section === "inventory" ? (
+            <InventoryManagement 
+              language={language} 
+              currentUser={currentUser} 
+              t={t}
+              viewMode={subSection === '' ? 'list' : subSection as any}
+              selectedId={routeParams.id}
+              onNavigate={(mode: any, id?: any) => handleSubNavigation('inventory', mode, id)}
+            />
           ) : section === "inventory-requests" ? (
-            <InventoryRequestManagement language={language} currentUser={currentUser} t={t} />
+            <InventoryRequestManagement 
+              language={language} 
+              currentUser={currentUser} 
+              t={t}
+              viewMode={subSection === '' ? 'list' : subSection as any}
+              selectedId={routeParams.id}
+              onNavigate={(mode: any, id?: any) => handleSubNavigation('inventory-requests', mode, id)}
+            />
           ) : section === "studio-bookings" ? (
-            <StudioBookingManagement language={language} currentUser={currentUser} t={t} />
+            <StudioBookingManagement 
+              language={language} 
+              currentUser={currentUser} 
+              t={t}
+              viewMode={subSection === '' ? 'list' : subSection as any}
+              selectedId={routeParams.id}
+              onNavigate={(mode: any, id?: any) => handleSubNavigation('studio-bookings', mode, id)}
+            />
           ) : section === "sales-visits" ? (
-            <SalesVisitManagement language={language} currentUser={currentUser} t={t} />
+            <SalesVisitManagement 
+              language={language} 
+              currentUser={currentUser} 
+              t={t}
+              viewMode={subSection === '' ? 'list' : subSection as any}
+              selectedId={routeParams.id}
+              onNavigate={(mode, id) => handleSubNavigation('sales-visits', mode, id)}
+            />
           ) : section === "admin" ? (
             <div className="max-w-6xl mx-auto space-y-6">
               {/* Admin Dashboard Header */}
@@ -4383,7 +5108,7 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSection('sales-visits')}>
+                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigateToSection('sales-visits')}>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-purple-500/10 text-purple-500 grid place-items-center">
                         <TrendingUp className="h-5 w-5" />
@@ -4448,7 +5173,7 @@ const App: React.FC = () => {
                       
                       {/* Manage Sales Visits Button */}
                       <button
-                        onClick={() => setSection('sales-visits')}
+                        onClick={() => navigateToSection('sales-visits')}
                         className="w-full flex items-center justify-center gap-2 rounded-lg bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
                       >
                         <TrendingUp className="h-4 w-4" />
@@ -4591,7 +5316,7 @@ const App: React.FC = () => {
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
                     onClick={() => { setShowAddUserDialog(false); setNewUserErrors({}); }}
                   />
-                  <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
+                  <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md lg:max-w-lg px-4">
                     <div
                       className="rounded-xl border border-border shadow-2xl"
                       style={{ background: "var(--gradient-luxury-card)" }}

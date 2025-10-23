@@ -54,6 +54,8 @@ axiosInstance.interceptors.response.use(
     const axiosError = error as any;
     if (axiosError.response?.status === 401) {
       tokenManager.removeToken();
+      // Emit event for App to handle logout
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       // Do not hard-redirect on 401. Let callers handle it (e.g., show "Invalid credentials").
       // Hard-redirecting to '/login' can cause 404s on static hosts without SPA rewrites.
     }
@@ -902,40 +904,16 @@ export const inventoryRequestsApi = {
     return response.data.data;
   },
 
-  downloadPdf: async (id: number): Promise<void> => {
-    const token = tokenManager.getToken();
-    const url = `${API_BASE_URL}/inventory-requests/${id}/download`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `inventory_request_${id}.pdf`;
-    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
-      .then(res => res.blob())
-      .then(blob => {
-        const u = window.URL.createObjectURL(blob);
-        link.href = u;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(u);
-      });
+  downloadPdf: async (id: number): Promise<any> => {
+    // Now returns JSON data for print view instead of downloading PDF
+    const response = await axiosInstance.get(`/inventory-requests/${id}/download`);
+    return response.data;
   },
 
-  downloadReturnReceipt: async (id: number): Promise<void> => {
-    const token = tokenManager.getToken();
-    const url = `${API_BASE_URL}/inventory-requests/${id}/download-return`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `return_receipt_${id}.pdf`;
-    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
-      .then(res => res.blob())
-      .then(blob => {
-        const u = window.URL.createObjectURL(blob);
-        link.href = u;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(u);
-      });
+  downloadReturnReceipt: async (id: number): Promise<any> => {
+    // Now returns JSON data for print view instead of downloading PDF
+    const response = await axiosInstance.get(`/inventory-requests/${id}/download-return`);
+    return response.data;
   },
 
   create: async (data: any): Promise<any> => {
@@ -984,22 +962,10 @@ export const studioBookingsApi = {
     return response.data.data;
   },
 
-  downloadPdf: async (id: number): Promise<void> => {
-    const token = tokenManager.getToken();
-    const url = `${API_BASE_URL}/studio-bookings/${id}/download`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `studio_booking_${id}.pdf`;
-    fetch(url, { headers: { 'Authorization': `Bearer ${token}` }})
-      .then(res => res.blob())
-      .then(blob => {
-        const u = window.URL.createObjectURL(blob);
-        link.href = u;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(u);
-      });
+  downloadPdf: async (id: number): Promise<any> => {
+    // Now returns JSON data for print view instead of downloading PDF
+    const response = await axiosInstance.get(`/studio-bookings/${id}/download`);
+    return response.data;
   },
 
   create: async (data: any): Promise<any> => {

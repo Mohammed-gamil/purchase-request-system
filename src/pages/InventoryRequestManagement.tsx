@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Search, Filter, Download, Printer, Calendar, User, CheckCircle, XCircle, Clock, X, Eye, ThumbsUp, ThumbsDown, Send, FileText, MapPin, Briefcase, Camera } from 'lucide-react';
 import { inventoryRequestsApi, inventoryApi, apiClient } from '@/lib/api';
+import InventoryRequestPrintView from '@/components/inventory/InventoryRequestPrintView';
+import ReturnReceiptPrintView from '@/components/inventory/ReturnReceiptPrintView';
 
 interface InventoryRequestManagementProps {
   language: 'en' | 'ar';
@@ -12,6 +14,9 @@ interface InventoryRequestManagementProps {
     apiRole?: string;
   };
   t: (key: string) => string;
+  viewMode?: 'list' | 'create' | 'detail';
+  selectedId?: number;
+  onNavigate?: (mode: 'list' | 'create' | 'detail', id?: number) => void;
 }
 
 interface InventoryRequestItem {
@@ -69,14 +74,20 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
   language,
   currentUser,
   t,
+  viewMode = 'list',
+  selectedId,
+  onNavigate
 }) => {
   const [requests, setRequests] = useState<InventoryRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showReturnForm, setShowReturnForm] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
+  const [showReturnReceiptPrintView, setShowReturnReceiptPrintView] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -116,6 +127,47 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
   const [submitting, setSubmitting] = useState(false);
   
   const isRTL = language === 'ar';
+
+  // Handle navigation
+  const handleNavigate = (mode: 'list' | 'create' | 'detail', id?: number) => {
+    if (onNavigate) {
+      onNavigate(mode, id);
+    } else {
+      // Fallback to old modal behavior if no navigation handler provided
+      if (mode === 'create') {
+        setShowCreateForm(true);
+      } else if (mode === 'list') {
+        setShowCreateForm(false);
+        setSelectedRequest(null);
+        setShowDetailModal(false);
+        setShowReturnForm(false);
+      } else if (mode === 'detail' && id) {
+        const request = requests.find(r => r.id === id);
+        if (request) {
+          setSelectedRequest(request);
+          setShowDetailModal(true);
+        }
+      }
+    }
+  };
+
+  // Load selected request when in detail mode
+  useEffect(() => {
+    if (viewMode === 'detail' && selectedId && requests.length > 0) {
+      const request = requests.find(r => r.id === selectedId);
+      if (request) {
+        setSelectedRequest(request);
+        setShowDetailModal(true);
+      }
+    } else if (viewMode === 'create') {
+      setShowCreateForm(true);
+    } else if (viewMode === 'list') {
+      setShowCreateForm(false);
+      setShowDetailModal(false);
+      setShowReturnForm(false);
+      setSelectedRequest(null);
+    }
+  }, [viewMode, selectedId, requests]);
 
   useEffect(() => {
     loadRequests();
@@ -177,7 +229,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       exit_duration_to: '',
       warehouse_manager_id: '',
     });
-    setShowCreateForm(true);
+    handleNavigate('create');
   };
 
   const handleAddItem = () => {
@@ -268,7 +320,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       }
 
       await loadRequests();
-      setShowCreateForm(false);
+      handleNavigate('list');
       alert(isRTL ? 'تم إنشاء الطلب بنجاح' : 'Request created successfully');
     } catch (error: any) {
       // Show detailed server validation errors or raw response to help debugging
@@ -313,8 +365,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
   };
 
   const handleViewDetails = (request: InventoryRequest) => {
-    setSelectedRequest(request);
-    setShowDetailModal(true);
+    handleNavigate('detail', request.id);
   };
 
   const handleApprove = async (requestId: number) => {
@@ -326,7 +377,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       const status = currentUser.apiRole === 'DIRECT_MANAGER' ? 'dm_approved' : 'final_approved';
       await inventoryRequestsApi.updateStatus(requestId, status);
       await loadRequests();
-      setShowDetailModal(false);
+      handleNavigate('list');
       alert(isRTL ? 'تمت الموافقة بنجاح' : 'Approved successfully');
     } catch (error: any) {
       console.error('Failed to approve:', error);
@@ -346,7 +397,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       const status = currentUser.apiRole === 'DIRECT_MANAGER' ? 'dm_rejected' : 'final_rejected';
       await inventoryRequestsApi.updateStatus(selectedRequest.id, status, rejectionReason);
       await loadRequests();
-      setShowDetailModal(false);
+      handleNavigate('list');
       setShowRejectModal(false);
       setRejectionReason('');
       alert(isRTL ? 'تم الرفض بنجاح' : 'Rejected successfully');
@@ -411,11 +462,49 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       await inventoryRequestsApi.updateStatus(selectedRequest.id, 'returned');
       await loadRequests();
       setShowReturnForm(false);
-      setShowDetailModal(false);
+      handleNavigate('list');
       alert(isRTL ? 'تم تسجيل استلام المعدات بنجاح' : 'Equipment return recorded successfully');
     } catch (error: any) {
       console.error('Failed to record return:', error);
       alert(error?.response?.data?.error?.message || (isRTL ? 'فشل في تسجيل الاستلام' : 'Failed to record return'));
+    }
+  };
+
+  const handleDownloadPdf = async (requestId: number) => {
+    if (downloading) return;
+    
+    setDownloading(true);
+    try {
+      // Fetch the request data
+      const response = await inventoryRequestsApi.downloadPdf(requestId);
+      if (response.success && response.data) {
+        setSelectedRequest(response.data);
+        setShowPrintView(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to load print view:', error);
+      alert(error?.response?.data?.error?.message || (isRTL ? 'فشل في تحميل بيانات الطلب' : 'Failed to load request data'));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadReturnReceipt = async (requestId: number) => {
+    if (downloading) return;
+    
+    setDownloading(true);
+    try {
+      // Fetch the request data
+      const response = await inventoryRequestsApi.downloadReturnReceipt(requestId);
+      if (response.success && response.data) {
+        setSelectedRequest(response.data);
+        setShowReturnReceiptPrintView(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to load return receipt:', error);
+      alert(error?.response?.data?.error?.message || (isRTL ? 'فشل في تحميل إيصال الإرجاع' : 'Failed to load return receipt'));
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -460,8 +549,11 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="mb-6">
+      {/* Main List View */}
+      {viewMode === 'list' && (
+        <>
+          {/* Header */}
+          <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-600 rounded-lg">
@@ -488,7 +580,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
 
       {/* Filters and Search */}
       <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -544,7 +636,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRequests.map((request) => (
             <div
               key={request.id}
@@ -589,6 +681,24 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                   <Eye className="w-4 h-4" />
                   {isRTL ? 'عرض' : 'View'}
                 </button>
+                <button
+                  onClick={() => handleDownloadPdf(request.id)}
+                  disabled={downloading}
+                  className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={isRTL ? 'تحميل PDF' : 'Download PDF'}
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+                {request.status === 'returned' && (
+                  <button
+                    onClick={() => handleDownloadReturnReceipt(request.id)}
+                    disabled={downloading}
+                    className="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isRTL ? 'إيصال الإرجاع' : 'Return Receipt'}
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+                )}
                 {canApprove(request) && (
                   <button
                     onClick={() => handleApprove(request.id)}
@@ -622,34 +732,36 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
           ))}
         </div>
       )}
+      </>
+      )}
 
       {/* Create Form Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" dir={isRTL ? 'rtl' : 'ltr'}>
-          <div className="bg-white rounded-lg w-full max-w-5xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 border-b pb-4">
+      {viewMode === 'create' && (
+        <div className="bg-gray-50 min-h-screen w-full overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="w-full">
+            <div className="sticky top-0 bg-white border-b px-4 md:px-6 py-4 flex justify-between items-center shadow-sm z-10">
               <div>
-                <h2 className="text-2xl font-bold text-purple-900">
+                <h2 className="text-xl md:text-2xl font-bold text-purple-900">
                   {isRTL ? 'نموذج إذن خروج معدات تصوير – Action Group' : 'Equipment Exit Permit Form – Action Group'}
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {isRTL ? 'القسم: قسم الإنتاج والتصوير' : 'Department: Production & Photography'}
                 </p>
               </div>
-              <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-6 h-6" />
+              <button onClick={() => handleNavigate('list')} className="text-gray-500 hover:text-gray-700 transition-colors">
+                <X className="w-5 h-5 md:w-6 md:h-6" />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-6">
               {/* Employee Information Section */}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg border-l-4 border-purple-600">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 md:p-6 rounded-lg border-l-4 border-purple-600 shadow-sm">
                 <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5" />
                   {isRTL ? 'معلومات الموظف المسؤول' : 'Responsible Employee Information'}
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'اسم الموظف' : 'Employee Name'} <span className="text-red-500">*</span>
@@ -692,13 +804,13 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
               </div>
 
               {/* Exit Details Section */}
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg border-l-4 border-blue-600">
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 md:p-6 rounded-lg border-l-4 border-blue-600 shadow-sm">
                 <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
                   <Briefcase className="w-5 h-5" />
                   {isRTL ? 'تفاصيل الخروج' : 'Exit Details'}
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-4 md:space-y-6">
                   <div>
                     <label className="block text-sm font-semibold mb-2 text-gray-700">
                       {isRTL ? 'العنوان / الغرض من الخروج' : 'Title / Purpose of Exit'} <span className="text-red-500">*</span>
@@ -712,7 +824,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-sm font-semibold mb-3 text-gray-700">
                         {isRTL ? 'الغرض من الخروج' : 'Exit Purpose'} <span className="text-red-500">*</span>
@@ -756,7 +868,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-sm font-semibold mb-2 text-gray-700">
                         {isRTL ? 'اسم العميل أو الجهة' : 'Client or Entity Name'}
@@ -765,7 +877,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                         type="text"
                         value={formData.client_entity_name}
                         onChange={(e) => setFormData({...formData, client_entity_name: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder={isRTL ? 'أدخل اسم العميل أو الجهة' : 'Enter client/entity name'}
                       />
                     </div>
@@ -787,7 +899,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <div>
                       <label className="block text-sm font-semibold mb-2 text-gray-700">
                         {isRTL ? 'مدة الخروج - من' : 'Exit Duration - From'} <span className="text-red-500">*</span>
@@ -796,7 +908,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                         type="datetime-local"
                         value={formData.exit_duration_from}
                         onChange={(e) => setFormData({...formData, exit_duration_from: e.target.value})}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       />
                     </div>
 
@@ -991,7 +1103,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                   {isRTL ? 'حفظ كمسودة' : 'Save as Draft'}
                 </button>
                 <button
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={() => handleNavigate('list')}
                   className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-all"
                 >
                   {isRTL ? 'إلغاء' : 'Cancel'}
@@ -1003,22 +1115,21 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
       )}
 
       {/* Detail Modal with Approval Flow */}
-      {showDetailModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" dir={isRTL ? 'rtl' : 'ltr'}>
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between z-10">
+      {viewMode === 'detail' && selectedRequest && (
+        <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="w-full min-h-screen">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm z-10">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{selectedRequest.title}</h2>
                 <p className="text-sm text-gray-500 mt-1">{selectedRequest.request_id}</p>
               </div>
-              <button onClick={() => setShowDetailModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => handleNavigate('list')} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
-
-            <div className="p-6 space-y-6">
+            <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
               {/* Approval Flow Timeline */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 md:p-6 rounded-lg">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-purple-600" />
                   {isRTL ? 'مسار الموافقة' : 'Approval Flow'}
@@ -1209,16 +1320,18 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
                     </button>
                   )}
                   <button
-                    onClick={() => inventoryRequestsApi.downloadPdf(selectedRequest.id).catch(err => console.error(err))}
-                    className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors font-semibold flex items-center gap-2"
+                    onClick={() => handleDownloadPdf(selectedRequest.id)}
+                    disabled={downloading}
+                    className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Download className="w-4 h-4" />
                     {isRTL ? 'تحميل الطلب' : 'Download Request'}
                   </button>
                   {selectedRequest.status === 'returned' && (
                     <button
-                      onClick={() => inventoryRequestsApi.downloadReturnReceipt(selectedRequest.id).catch(err => console.error(err))}
-                      className="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-semibold flex items-center gap-2"
+                      onClick={() => handleDownloadReturnReceipt(selectedRequest.id)}
+                      disabled={downloading}
+                      className="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <FileText className="w-4 h-4" />
                       {isRTL ? 'إيصال الإرجاع' : 'Return Receipt'}
@@ -1530,6 +1643,31 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Print Views */}
+      {showPrintView && selectedRequest && (
+        <InventoryRequestPrintView
+          request={selectedRequest}
+          language={language}
+          t={t}
+          onClose={() => {
+            setShowPrintView(false);
+            setSelectedRequest(null);
+          }}
+        />
+      )}
+
+      {showReturnReceiptPrintView && selectedRequest && (
+        <ReturnReceiptPrintView
+          request={selectedRequest}
+          language={language}
+          t={t}
+          onClose={() => {
+            setShowReturnReceiptPrintView(false);
+            setSelectedRequest(null);
+          }}
+        />
       )}
     </div>
   );

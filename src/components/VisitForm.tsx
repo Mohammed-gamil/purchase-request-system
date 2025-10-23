@@ -276,9 +276,9 @@ const VisitForm: React.FC<VisitFormProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm z-10">
           <h2 className="text-2xl font-bold">
             {editVisit ? t('editVisit') || 'Edit Visit' : t('newVisit')}
           </h2>
@@ -290,7 +290,7 @@ const VisitForm: React.FC<VisitFormProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="max-w-7xl mx-auto p-6 space-y-6">
           {/* Client Selection */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -415,10 +415,19 @@ const VisitForm: React.FC<VisitFormProps> = ({
 
           {/* New Client Form Modal */}
           {showNewClientForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-              <div className="bg-white rounded-lg w-full max-w-md p-6">
-                <h3 className="text-xl font-bold mb-4">{t('addNewClient') || 'Add New Client'}</h3>
-                <div className="space-y-4">
+            <div className="fixed inset-0 bg-white z-[60] overflow-y-auto">
+              <div className="w-full">
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
+                  <h3 className="text-xl font-bold">{t('addNewClient') || 'Add New Client'}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewClientForm(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="max-w-2xl mx-auto p-6 space-y-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1">
                       {t('storeName') || 'Store Name'} <span className="text-red-500">*</span>
@@ -502,7 +511,7 @@ const VisitForm: React.FC<VisitFormProps> = ({
                       ))}
                     </select>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-4">
                     <button
                       type="button"
                       onClick={handleCreateClient}

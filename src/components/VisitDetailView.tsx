@@ -263,10 +263,10 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-md">
           <h2 className="text-xl font-bold">{isRTL ? 'تفاصيل الزيارة' : 'Visit Details'}</h2>
           <div className="flex items-center gap-2">
             <button
@@ -287,7 +287,7 @@ const VisitDetailView: React.FC<VisitDetailViewProps> = ({ visit, language, t, o
         </div>
 
         {/* Content */}
-        <div ref={contentRef} className="p-6 overflow-y-auto flex-1">
+        <div ref={contentRef} className="max-w-7xl mx-auto w-full p-6">
           {/* Status Badge */}
           <div className="mb-6">
             <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(visit.status)}`}>
