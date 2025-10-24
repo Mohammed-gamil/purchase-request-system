@@ -4321,7 +4321,7 @@ const App: React.FC = () => {
           "md:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           // Desktop: icon-only or full width
-          sidebarOpen ? "w-64 md:w-64" : "w-64 md:w-16"
+          sidebarOpen ? "w-64" : "w-16"
         )}
         style={language === "ar" ? { right: 0 } : { left: 0 }}
       >
@@ -4832,9 +4832,9 @@ const App: React.FC = () => {
           "flex-1 transition-all duration-300 min-h-screen",
           "pt-16 md:pt-0", // Add top padding on mobile for fixed menu bar
           // Responsive margin based on sidebar state
-          language === "ar" 
-            ? (sidebarOpen ? "md:mr-64" : "md:mr-16")
-            : (sidebarOpen ? "md:ml-64" : "md:ml-16")
+          language === "ar"
+            ? (sidebarOpen ? "mr-64" : "md:mr-16")
+            : (sidebarOpen ? "ml-64" : "md:ml-16")
         )}
       >
         {/* Top Navbar - Simplified */}
