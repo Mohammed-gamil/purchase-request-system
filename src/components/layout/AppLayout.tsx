@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useTranslation } from '@/hooks/use-translation';
@@ -6,7 +6,6 @@ import { useLanguageStore } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -25,6 +24,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { UserRole } from '@/types';
+import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'nav.dashboard', href: '/dashboard', icon: Home, roles: ['USER', 'DIRECT_MANAGER', 'ACCOUNTANT', 'FINAL_MANAGER', 'ADMIN'] },
@@ -64,84 +64,83 @@ export default function AppLayout() {
 
   const dirClass = direction === 'rtl' ? 'rtl' : 'ltr';
   const isRtl = direction === 'rtl';
-  
-  return (
-    <div className={`app-layout ${dirClass} flex ${isRtl ? 'flex-row-reverse' : 'flex-row'} min-h-screen`}>
-      {/* Desktop sidebar */}
-      <div className="sidebar hidden lg:block w-64 flex-shrink-0">
-        <div className={`flex flex-col h-full luxury-card ${isRtl ? 'border-l' : 'border-r'} border-border/50 backdrop-blur-xl`}>
-          <div className="flex items-center px-6 py-4 border-b border-border/50 luxury-header">
-            <h1 className="text-xl font-bold text-foreground">{t('app.title')}</h1>
-          </div>
-          <nav className="flex-1 px-4 py-4 space-y-2">
-            {filteredNavigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isCurrentPath(item.href)
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`}
-              >
-                <item.icon className={`${isRtl ? 'ml-3' : 'mr-3'} h-5 w-5 ${isRtl && item.icon.name === 'ArrowRight' ? 'rtl-flip' : ''}`} />
-                {t(item.name as any)}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </div>
 
-      {/* Main content area including mobile header */}
-      <div className="main-content flex flex-col flex-grow">
-        {/* Mobile sidebar */}
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side={direction === 'rtl' ? 'right' : 'left'} className="w-64 p-0 luxury-card backdrop-blur-xl">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center px-6 py-4 border-b border-border/50 luxury-header">
-                <h1 className="text-xl font-bold text-foreground">{t('app.title')}</h1>
-              </div>
-              <nav className="flex-1 px-4 py-4 space-y-2">
-                {filteredNavigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isCurrentPath(item.href)
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <item.icon className={`${isRtl ? 'ml-3' : 'mr-3'} h-5 w-5 ${isRtl && item.icon.name === 'ArrowRight' ? 'rtl-flip' : ''}`} />
-                    {t(item.name as any)}
-                  </Link>
-                ))}
-              </nav>
+  // Close sidebar on route change on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  return (
+    <div className={cn("app-layout relative min-h-screen bg-background", dirClass)}>
+      <div className="relative flex min-h-screen overflow-x-hidden">
+        {/* Sidebar */}
+        <div
+          className={cn(
+            'fixed inset-y-0 z-50 h-full w-64 flex-shrink-0 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0',
+            isRtl ? 'right-0' : 'left-0',
+            sidebarOpen ? 'translate-x-0' : (isRtl ? 'translate-x-full' : '-translate-x-full')
+          )}
+        >
+          <div className={`flex flex-col h-full luxury-card ${isRtl ? 'border-l' : 'border-r'} border-border/50 backdrop-blur-xl`}>
+            <div className="flex items-center px-6 py-4 border-b border-border/50 luxury-header">
+              <h1 className="text-xl font-bold text-foreground">{t('app.title')}</h1>
             </div>
-          </SheetContent>
-        
+            <nav className="flex-1 px-4 py-4 space-y-2">
+              {filteredNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isCurrentPath(item.href)
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                >
+                  <item.icon className={`${isRtl ? 'ml-3' : 'mr-3'} h-5 w-5 ${isRtl && item.icon.name === 'ArrowRight' ? 'rtl-flip' : ''}`} />
+                  {t(item.name as any)}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Main content area */}
+        <div
+          className={cn(
+            'main-content flex flex-col flex-grow w-full transition-transform duration-300 ease-in-out',
+            {
+              'lg:translate-x-0': true, // Reset transform on large screens
+              'translate-x-64': sidebarOpen && !isRtl,
+              '-translate-x-64': sidebarOpen && isRtl,
+            }
+          )}
+        >
           {/* Top navigation */}
-          <div className="top-header sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border/50 luxury-header backdrop-blur-xl px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="lg:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
+          <div className="top-header sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-border/50 luxury-header backdrop-blur-xl px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
 
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
               <div className="flex flex-1"></div>
               <div className="flex items-center gap-x-4 lg:gap-x-6">
-                {/* Language Toggle */}
                 <LanguageToggle />
-                
-                {/* Theme Toggle */}
                 <ThemeToggle />
-                
-                {/* Notifications */}
                 <NotificationDropdown />
-
-                {/* Profile dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -187,7 +186,7 @@ export default function AppLayout() {
               <Outlet />
             </div>
           </main>
-        </Sheet>
+        </div>
       </div>
     </div>
   );

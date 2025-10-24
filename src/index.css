@@ -137,6 +137,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+  }
+
+  html {
+    overflow-x: hidden; /* Prevent horizontal scroll on root */
   }
 
   /* Ensure native form controls match theme (avoid white-on-white) */
@@ -1007,9 +1012,13 @@
   display: flex;
   flex-direction: column;
   gap: 1rem; /* Consistent vertical gap */
+  width: 100%;
+  max-width: 100%; /* Prevent overflow on small screens */
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Tablet optimization */
+/* Tablet optimization (iPad, iPad Pro) */
 @media (min-width: 768px) {
   .pr-page-container {
     padding: 1.5rem;
@@ -1022,6 +1031,7 @@
   .pr-page-container {
     padding: 2rem; /* Increased padding for more breathing room */
     gap: 1.5rem;
+    max-width: 80rem; /* 1280px - Constrain width on large screens */
   }
 }
 
@@ -1280,15 +1290,18 @@
 /* Tablet: 3-column layout with a fluid middle column (clamp keeps it sane)
    Left and right columns are reasonably fixed and won't collapse on tablets. */
 @media (min-width: 768px) {
-  .app-grid {
-    grid-template-columns: 220px clamp(380px, 48vw, 640px) 280px;
+    .app-grid {
+    /* Make the main (requests list) column first so list rows can take full width
+       Order: main content | left-side auxiliary panel | right comments */
+    grid-template-columns: clamp(380px, 48vw, 640px) 220px 280px;
   }
 }
 
 /* Desktop: widen sidebars slightly and let middle column grow */
 @media (min-width: 1024px) {
-  .app-grid {
-    grid-template-columns: 240px minmax(520px, 1fr) 320px;
+    .app-grid {
+    /* Desktop: main column first, then smaller left panel and comments */
+    grid-template-columns: minmax(520px, 1fr) 240px 320px;
   }
 }
 
@@ -1329,9 +1342,24 @@ button.touch-target,
 
 /* When layout gets tight, collapse comments panel below main content */
 @media (max-width: 900px) {
+  /* On narrow screens collapse to a single column to avoid horizontal overflow
+     (previous rule used fixed side column widths which caused the grid to overflow
+     on small devices such as iPhone widths). */
   .app-grid {
-    grid-template-columns: 200px minmax(320px, 1fr);
+    grid-template-columns: 1fr;
     grid-auto-rows: auto;
   }
   .comments-panel { order: 3; }
+}
+
+/* iOS Safe Area support: allow content to respect notch/home-indicator insets
+   without changing layout on other platforms. This works together with
+   the viewport-fit=cover meta tag added to index.html. */
+@supports (padding: env(safe-area-inset-top)) {
+  .app-layout {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

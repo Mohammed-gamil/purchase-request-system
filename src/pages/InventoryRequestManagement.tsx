@@ -561,7 +561,7 @@ const InventoryRequestManagement: React.FC<InventoryRequestManagementProps> = ({
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {isRTL ? 'طلبات المخزون' : 'Inventory Requests'}
+                {isRTL ? 'اذن خروج معدات' : 'Equipment exit permit'}
               </h1>
               <p className="text-sm text-gray-600">
                 {isRTL ? 'إدارة طلبات عناصر المخزون' : 'Manage inventory item requests'}
